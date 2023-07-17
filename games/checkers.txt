@@ -1,0 +1,1204 @@
+--@name Checkers
+if SERVER then
+        
+    local unit = class("unit")
+    
+    function unit:initialize(gm,plate,x,y,pos)
+        self.x = x
+        self.y = y
+        function self:getGM()
+            return gm
+        end
+        self.plate = plate
+        self.scale = gm.board.info.modelscale
+        self.chunk = gm.board.info.chunk
+    
+    end
+    
+    function unit:setParent(parent)
+        self.holo:setParent(parent)
+    end
+    function unit:getAngles()
+        return self.holo:getAngles()
+    end
+    
+    function unit:setAngles(pos)
+        self.holo:setAngles(pos)
+    end
+    function unit:setPos(pos)
+        self.holo:setPos(pos)
+    end
+    
+    function unit:getPos()
+        return self.holo:getPos()
+    end
+    
+    function unit:rescale(offset)
+        return self.holo:setScale(self.info.scale * self.scale/2 * offset)
+    end
+    
+    
+    function unit:_spawn()
+        self.holo = hologram.create(self.plate:localToWorld(self.info.offset*self.scale),self.info.angoffset or Angle(0,math.random()*360,0),self.info.model,self.info.scale * self.scale/2,Color(255,255,255))
+        self.pos = self.plate:localToWorld(self.info.offset*self.scale)
+        self:spawn()
+    end
+    
+    function unit:moveTo(to)
+        self.plate = to
+        self.holo:setPos(self.plate:localToWorld(self.info.offset*self.scale))
+        self.pos = self.plate:localToWorld(self.info.offset*self.scale)
+    end
+    
+    function unit:setPlate(plate)
+        self.plate = plate
+    end
+    
+    
+    function unit:getTo(to)
+        return to:localToWorld(self.info.offset*self.scale)
+    end
+    
+    function unit:spawn()
+        self:postSpawn()
+    end
+    
+    function unit:postSpawn()
+    end
+    
+    function unit:die(f)
+        chip():emitSound("items/flashlight1.wav")
+        self.holo:removeEffects(EF.ITEM_BLINK)
+        if not f then self.holo:remove() end
+    end
+    
+    function unit:think()
+    end
+    function unit:onClick()
+    end
+    
+    local bd = class("black_dama",unit)
+    
+    bd.static.info = {
+        name = "black_dama",
+        model = "models/props_phx/games/chess/black_dama.mdl",
+        scale = Vector(1),
+        offset = Vector(0,0,6)
+    }
+    
+    function bd:initialize(...)
+        unit.initialize(self,...)
+        self.info = bd.static.info
+    
+        self:_spawn()
+        self.holo:setMaterial("WTP/paint_5")
+        self.holo:setColor(Color(51,51,51))
+    end
+    
+    local wd = class("white_dama",unit)
+    
+    wd.static.info = {
+        name = "white_dama",
+        model = "models/props_phx/games/chess/white_dama.mdl",
+        scale = Vector(1),
+        offset = Vector(0,0,6)
+    }
+    
+    function wd:initialize(...)
+        unit.initialize(self,...)
+        self.info = wd.static.info
+    
+        self:_spawn()
+        self.holo:setMaterial("WTP/paint_5")
+        self.holo:setColor(Color(151,151,151))
+    end
+    units = {
+        white_dama = wd;
+        black_dama = bd;
+    }
+    local UnitCreator = class("UnitCreator")
+    UnitCreator.static.units = units
+    function UnitCreator:initialize(game)
+        self.units = units
+        self.game = game
+    end
+    
+    function UnitCreator:create(name,...)
+        return units[name]:new(self.game,...)
+    end
+    function UnitCreator:createRandom(...)
+        return table.random(units):new(self.game,...)
+    end
+    
+    local unitCreator = UnitCreator
+    
+    
+    
+    local Player = class("player")
+    function find.playerBySteamID(steamID)
+        return find.allPlayers(function(ply) return ply:getSteamID() == steamID end)[1] or "BOT"
+    end
+    
+    function table.map(tbl,fn)
+        for index,value in pairs(tbl) do
+            fn(index,value,tbl)
+        end
+    end
+    function table.findF(tbl,fn)
+        for index,value in pairs(tbl) do
+            if fn(value) then return value end
+        end
+    end
+    
+    function setTimeout(fn,Timeout)
+        timer.create("timeout."..crc(tostring(fn)),Timeout/1000,1,fn)
+        return "timeout."..crc(tostring(fn))
+    end
+    
+    function clearInterval(Interval)
+        timer.stop(Interval)
+    end
+    function setInterval(fn,Interval)
+        local id = "interval."..crc(tostring(fn))
+        timer.create(id,Interval/1000,0,function() fn(id) end)
+    end
+    function Player:initialize(options)
+        self.steamID = options.SID
+        self.ply = find.playerBySteamID(self.steamID)
+        if self.ply == "BOT" then
+            self.isbot = true
+            self.steamID = "BOT"
+            self.name = options.SID
+            self.speed = not isnumber(options.speed) and 500 or options.speed
+        else
+            self.name = self.ply:getName()
+        end
+        self.turn = 0
+        self.usedkeys = {}
+        self.lastSelected = nil
+        self.selected = {}
+        self.board = options.board
+        hook.add("PlayerDisconnect",table.address(self),function(_,_,ply) 
+            if ply == self.ply then 
+                self:setToBot() 
+                hook.remove("PlayerDisconnect",table.address(self))
+            end 
+        end)
+    end
+    function Player:setTurn(v)
+        self.turn = v
+    end
+    
+    function Player:getTurn()
+        return self.turn
+    end
+    function Player:getSteamID()
+        return self.steamID
+    end
+    
+    function Player:getUserID()
+        return self.ply.getUserID and self.ply:getUserID() or 0
+    end
+    
+    function Player:setToBot()
+        self.ply = "BOT"
+        self.isbot = true
+        self.steamID = "BOT"
+        self.name = "BOT"
+        self.speed = self.speed and self.speed or 500
+        
+        self.usedkeys = {}
+        self.lastSelected = nil
+        self.selected = {}
+        chip():emitSound("buttons/combine_button2.wav")
+        setInterval(function(i) 
+            self.board:botThink(self)
+            if PHAZE == "GAME OVER" then
+                clearInterval(i)
+            end
+        end,self.speed)
+    end
+    
+    function Player:setUsed(key)
+        self.usedkeys[key] = true
+    end
+    
+    function Player:setUnUsed(key)
+        self.usedkeys[key] = nil
+    end
+    
+    function Player:getUsed(key)
+        return self.usedkeys[key]
+    end
+    
+    function Player:getSelected()
+        return self.selected
+    end
+    
+    function Player:addSelect(v)
+        table.insert(self.selected,v)
+        self:setLastSelected(v)
+    end
+    function Player:isSelected(plate)
+        return table.findF(self.selected,function(value) return value == plate end)
+    end
+    
+    function Player:clearSelected()
+        self.selected = {}
+    end
+    
+    function Player:setLastSelected(v)
+        self.lastSelected = v
+    end
+    
+    function Player:getLastSelected()
+        return self.lastSelected
+    end
+    
+    function Player:getEyeTrace()
+        if self.isbot then return {
+            Normal = Vector(0,0,1);
+            StartPos = Vector(0,0,1);
+            HitPos = Vector(0,0,1);
+        }
+        end
+        return self.ply:getEyeTrace()
+    end
+    
+    local Playerclass = Player
+    
+    local unknowngame = class("chess_game_engine")
+    
+    PHAZE = "NOTHING"
+    
+    function unknowngame:initialize(options)
+        self.plys = {}
+        self.used = {}
+        self.turn = 0
+        self.maxPlayers = options.maxPlayers
+        self.started = false
+        self.addbots = options.addbots
+        self.startPos = chip():getPos()
+        self.board = {
+            info = {
+                maxX = options.maxX;
+                maxY = options.maxY;
+                boardmodel = options.boardmodel;
+                modelsize = options.modelsize;
+                modelscale = options.modelscale;
+                random = options.random;
+                chunk = options.modelsize*options.modelscale;
+            },
+            positions = {};
+        }
+        
+        self.UnitCreator = unitCreator:new(self)
+        self.avalibleKeys = {
+            IN_KEY.USE;
+            IN_KEY.ATTACK;
+            IN_KEY.ATTACK2;
+        }
+        self.avalibleKeys = options.keys or self.avalibleKeys
+        hook.add("playersay","",function(ply,txt)
+            
+            if txt == "exit game" then
+                for _,p in pairs(self.plys) do
+                    if p.steamID == ply:getSteamID() then
+                        p:setToBot()
+                        net.start("exitgame")
+                        net.writeUInt(ply:getUserID(),16)
+                        net.send()
+                        break
+                    end
+                end
+            elseif txt == "add bot" and (self.maxPlayers == 0 or #self.plys < self.maxPlayers) then
+                if self.started then return end
+                self:addPlayer("bot")
+            end
+        end)
+    end
+    local function canProcess() 
+    return math.max(cpuTotalAverage(), cpuTotalUsed()/4) < cpuMax() * 0.7 
+    end
+    function table.farsh(tbl)
+        for index,value in pairs(tbl) do
+            local rand = math.random(index,#tbl)
+            tbl[index],tbl[rand] = tbl[rand],tbl[index]
+            tbl[index].turn,tbl[rand].turn = tbl[rand].turn,tbl[index].turn
+        end
+    end
+    local function async(a)
+        local G = crc(tostring(a))
+        local workers = {}
+        hook.add("think","async."..G,function()
+            for Key, work in ipairs(workers) do
+                if not canProcess() then break end
+                try(work(Key))
+                if PHAZE ~= "GAME OVER" and #workers == 0 then PHAZE = "NOTHING" end
+            end
+            
+        end)
+        return function(...)
+            local args = {...}
+            table.insert(workers,function(Key)
+                        return coroutine.wrap(function()
+                        a(unpack(args))
+                        table.remove(workers,Key)
+                        end) 
+                    end)
+        end
+    end
+    local function await(a)
+        local G = crc(tostring(a))
+        local workers = {}
+        hook.add("think","await."..G,function()
+            for Key, work in ipairs(workers) do
+                if not canProcess() or not pcall(work(Key)) then break end
+                if PHAZE ~= "GAME OVER" and #workers == 0 then PHAZE = "NOTHING" end
+            end
+        end)
+        return function(...)
+            local args = {...}
+            table.insert(workers,function(Key)
+                        return coroutine.wrap(function()
+                        a(unpack(args))
+                        table.remove(workers,Key)
+                        end) 
+                    end)
+        end
+    end
+    local ANIMATIONTHINK = async(function(f)
+        return f()
+    end)
+    function unknowngame:AnimationThink(f)
+        return ANIMATIONTHINK(f)
+    end
+    function unknowngame:getBoardSize()
+        return self.board.info.chunk * self.board.info.maxX
+    end
+    function unknowngame:getBoardPos()
+        return (self.board.info.chunk * self.board.info.maxX + self.board.info.chunk)/2
+    end
+    
+    function unknowngame:create()
+        PHAZE = "CREATING"
+        self.started = false
+        local board = self.board
+        local info = board.info
+        local size = info.modelsize
+        local scale = info.modelscale
+        local chunk = info.chunk
+        local model = info.boardmodel
+        local positions = board.positions
+        for y = 1, info.maxY do
+            positions[y] = {}
+            for x = 1, info.maxX do
+                local pos = Vector(x*chunk,y*chunk)
+                positions[y][x] = {pos = pos,unit = false,x=x,y=y}
+            end
+        end
+        
+        local bPos = self:getBoardPos()
+        local bSize = self:getBoardSize() + self.board.info.chunk/8
+        
+        timer.createC("1",10/600,info.maxY * info.maxX,function(iterations)
+            
+            local x,y = iterations%info.maxY + 1,math.floor(iterations/info.maxX + 1)
+            local i = self.board.positions[y][x]
+            
+            local holo = hologram.create(self.startPos + i.pos,Angle(),model,Vector(1)*scale)
+            holo:setColor(Color(49,80,49))
+            i.base = holo
+            self:calcChessCreate(holo,x,y)
+        end,function()
+            local b = hologram.create(chip():localToWorld(Vector(bPos,bPos,0)),Angle(),"models/holograms/cube.mdl")
+            b:setSize(Vector(bSize,bSize,self.board.info.modelscale*11.8))
+            b:setColor(Color(32,32,32))
+            self:onSpawn()
+            self.turn = 0
+            self.plys = {}
+            if self.maxPlayers == 0 then
+                for _,ply in pairs(find.allPlayers()) do
+                    local a = Playerclass:new{SID = ply:getSteamID(),speed = true,board = self}
+                    a:setTurn(turn)
+                    table.insert(self.plys,a)
+                    self.turn = self.turn + 1
+                end
+                self:wantStart() 
+                return 
+            end
+            net.receive("connected",function(_,ply)
+                if self.started then return end
+                self:addPlayer(ply)
+                
+                if not BOT and self.addbots then
+                    self:addPlayer("bot")
+                end
+            end)
+            
+        end)
+    end
+    function unknowngame:calcChessCreate(base,x,y)
+        if math.random() < self.board.info.random then 
+            self:setRandomUnit(x,y)
+        end
+    end
+    function unknowngame:wantStart()
+        
+        if #self.plys == self.maxPlayers or self.maxPlayers == 0 then 
+            self.started = true
+            self.turn = 0
+            table.farsh(self.plys)
+            hook.remove("PlayerUse",table.address(self))
+            self:start() 
+            local tosend = {}
+            for _,ply in ipairs(self.plys) do
+                table.insert(tosend,ply:getUserID())
+            end
+            net.start("startgame")
+            net.writeTable(tosend)
+            net.send()
+        end
+    end
+    function unknowngame:addPlayer(ply)
+        
+        local ply = Playerclass:new{SID = ply.getSteamID and ply:getSteamID() or "BOT",speed = 1000,board = self}
+        ply:setTurn(self.turn)
+        table.insert(self.plys,ply)
+        self.turn = self.turn + 1
+        self:wantStart()
+    end
+    function unknowngame:setRandomUnit(x,y)
+        if x<1 or x>self.board.info.maxX then throw("max X: "..self.board.info.maxX) end
+        if y<1 or y>self.board.info.maxY then throw("max Y: "..self.board.info.maxY) end
+        local temp = self.board.positions[y][x]
+        if not temp.unit then
+            temp.unit = self.UnitCreator:createRandom(temp.base,x,y,temp.pos)
+            temp.unit:setParent(temp.base)
+        end
+        return temp
+    end
+    function unknowngame:setUnit(name,x,y)
+        if x<1 or x>self.board.info.maxX then throw("max X: "..self.board.info.maxX) end
+        if y<1 or y>self.board.info.maxY then throw("max Y: "..self.board.info.maxY) end
+        local temp = self.board.positions[y][x]
+        if not temp.unit then
+            temp.unit = self.UnitCreator:create(name,temp.base,x,y,temp.pos)
+            temp.unit:setParent(temp.base)
+        end
+        return temp
+    end
+    
+    function unknowngame:start()
+        PHAZE = "STARTING"
+        timer.create("think."..table.address(self),60/500,0,function()
+            if PHAZE == "GAME OVER" then
+                hook.remove("KeyPress","input."..table.address(self))
+                hook.remove("KeyRelease","input."..table.address(self))
+                timer.stop("think."..table.address(self))
+                return
+            end
+            for y,X in pairs(self.board.positions) do
+                for x,plate in pairs(X) do
+                    //plate.base:setPos(chip():localToWorld(plate.pos))
+                    self:onHover(plate,0)
+                    if plate.selected or plate.hover or plate.inAnimation then
+                        self:onHover(plate,2)
+                    end
+                    if plate.bekilled then
+                        self:onHover(plate,0.5)
+                    end
+                    if plate.unit then 
+                        plate.unit:think() 
+                    end
+                end
+            end
+            self:onThink()
+        end)
+        for turn,ply in pairs(self.plys) do
+            if ply.isbot then
+                setInterval(function(i) 
+                    self:botThink(ply)
+                    if PHAZE == "GAME OVER" then
+                        clearInterval(i)
+                    end
+                end,ply.speed)
+            end
+        end
+        hook.add("KeyPress","input."..table.address(self),function(ply,key)
+            local player = table.findF(self.plys,function(value) return value:getSteamID() == ply:getSteamID() end)
+            if not player then return end
+            local plate,x,y = self:getHoverPlate(player)
+            if plate then 
+                self:_onClick(player,plate,key,x,y)
+            end
+            player:setUsed(key)
+        end)
+        
+        hook.add("KeyRelease","input."..table.address(self),function(ply,key)
+            local player = table.findF(self.plys,function(value) return value:getSteamID() == ply:getSteamID() end)
+            if not player then return end
+            player:setUnUsed(key)
+        end)
+        PHAZE = "NOTHING"
+        self:postStart()
+    end
+    function unknowngame:_onClick(ply,plate,key,x,y)
+        if plate.inAnimation then return end
+        if PHAZE == "MOTION" or PHAZE == "GAME OVER" then return end
+        if plate.unit then 
+            plate.unit:onClick() 
+        end
+        self:onClick(ply,plate,key,x,y)
+    end
+    function unknowngame:onClick(ply,plate,key,x,y)
+        if key == IN_KEY.USE then
+            local From = ply:getLastSelected()
+            if From and From.unit and From ~= plate and not self:isSelected(plate) and not plate.unit then 
+                self:unselect(ply,From)
+                self:moveFromTo(From,plate) 
+            elseif #ply:getSelected() == 0 and plate.unit then
+                self:select(ply,plate)
+            elseif ply:isSelected(plate) and From == plate then
+                self:unselect(ply,From)
+            elseif plate.unit then
+                self:unselect(ply,From)
+                self:select(ply,plate)
+            end
+        end
+    
+        if key == IN_KEY.ATTACK then
+            self:setRandomUnit(x,y)
+        end
+        if key == IN_KEY.ATTACK2 then
+            if plate.unit then 
+                plate.unit:die()
+                plate.unit = nil    
+            end
+        end
+    
+    end
+    
+    function unknowngame:select(ply,plate)
+        plate.base:emitSound("ui/buttonrollover.wav")
+        ply:addSelect(plate)
+        plate.selected = true
+    end
+    function unknowngame:postStart()
+    end
+    function unknowngame:botThink(bot)
+        local y = math.random(1,self.board.info.maxX)
+        local x = math.random(1,self.board.info.maxY)
+        local plate = self.board.positions[y][x]
+        local key = table.random(self.avalibleKeys)
+        if plate then 
+            self:_onClick(bot,plate,key,x,y)
+        end
+        bot:setUsed(key)
+    end
+    function unknowngame:onThink()
+        table.map(self.plys,function(_,ply) 
+            local plate = self:getHoverPlate(ply)
+            if not plate or plate.selected or plate.inAnimation then return end
+            self:onHover(plate)
+        end)
+    end
+    
+    function unknowngame:getTurn()
+        return self.turn
+    end
+    function unknowngame:calcTurn()
+        self.turn = (self.turn + 1) % (#self.plys)
+    end
+    function unknowngame:setTurn(v)
+        self.turn = v
+    end
+    
+    function unknowngame:unselect(ply,plate)
+        ply:clearSelected()
+        ply:setLastSelected(nil)
+        plate.selected = nil
+    end
+    
+    function unknowngame:isSelected(plate)
+        return plate.selected ~= nil
+    end
+    function unknowngame:isSelectedByPly(ply,plate)
+        return self.used[ply:getUserID()].plates[plate] ~= nil
+    end
+    
+    function unknowngame:onHover(plate,power)
+        plate.base:setPos(self.startPos + plate.pos + Vector(0,0,(power or 1) * self.board.info.chunk/10))
+    end
+    function unknowngame:onSpawn()
+    end
+    function unknowngame:restart()
+        PHAZE = "GAME OVER"
+        hologram.removeAll()
+        self:create()
+    end
+    
+    function unknowngame:getHoverPlate(ply)
+        local tr = ply:getEyeTrace()
+        local chunk = self.board.info.chunk
+        local boxMaxs = self.board.positions[self.board.info.maxY][self.board.info.maxX].pos + Vector(chunk) / 2
+        local boxMins = self.board.positions[1][1].pos - Vector(chunk,chunk,0) / 2
+        local hit,_,_ = trace.intersectRayWithOBB(tr.StartPos,tr.Normal * 1000,self.startPos,Angle(),boxMins,boxMaxs)
+        
+        if hit then
+            local pos = hit - self.startPos
+            local y = math.clamp(math.round(pos.y/chunk), 1, self.board.info.maxX)
+            local x = math.clamp(math.round(pos.x/chunk), 1, self.board.info.maxY)
+    
+            return self.board.positions[y][x],x,y
+        end
+        return nil
+    end
+    function unknowngame:moveFromTo(from,to,cb)
+        from.inAnimation = true
+        to.inAnimation = true
+        PHAZE = "MOTION"
+        local progress = 0
+        from.unit:setParent(nil)
+        local startPos = from.unit:getPos()
+        local endPos = from.unit:getTo(to.base)
+        local Z = startPos:getDistance(endPos)
+    
+        self:AnimationThink(function()
+            progress = math.min(progress + 0.03,1)
+            local ease = math.sin(math.rad(math.easeOutCubic(progress))*180)
+            local ease2 = math.easeOutCubic(progress)
+    
+            local progressValueX = math.remap(ease2, 0, 1, startPos.x, endPos.x)
+            local progressValueY = math.remap(ease2, 0, 1, startPos.y, endPos.y)
+            local progressValueZ = math.remap(ease, 0, 1, startPos.z, endPos.z + math.min(Z/3,8 * self.board.info.chunk/10))
+            
+            from.unit:setPos(Vector(progressValueX,progressValueY,progressValueZ))
+            
+            if progress == 1 then 
+                
+                from.unit:moveTo(to.base)
+                from.unit:setParent(to.base)
+                to.unit,from.unit = from.unit,nil
+                
+                from.inAnimation = nil
+                to.inAnimation = nil
+                
+                if cb then cb() end 
+                return true 
+                
+            end
+            return throw("progress")
+        end)
+    end
+    function unknowngame:killMove(from,pos,cb)
+        PHAZE = "MOTION"
+        local progress = 0
+        from.unit:setParent(nil)
+        local startPos = from.unit:getPos()
+        local endPos = pos
+        local Z = startPos:getDistance(endPos)
+        from.inAnimation = true
+        self:AnimationThink(function()
+            progress = math.min(progress + 0.03,1)
+            local ease = math.sin(math.rad(math.easeOutCubic(progress))*180)
+            local ease2 = math.easeOutCubic(progress)
+    
+            local progressValueX = math.remap(ease2, 0, 1, startPos.x, endPos.x)
+            local progressValueY = math.remap(ease2, 0, 1, startPos.y, endPos.y)
+            local progressValueZ = math.remap(ease, 0, 1, startPos.z, endPos.z + math.min(Z/3,100))
+            
+            from.unit:setPos(Vector(progressValueX,progressValueY,progressValueZ))
+            
+            if progress == 1 then 
+                
+                from.unit:setPos(pos)
+                from.inAnimation = nil
+                from.unit = nil
+                
+                if cb then cb() end 
+                return true 
+                
+            end
+            return throw("progress")
+        end)
+    end
+    
+    
+    
+    function timer.createC(name,speed,count,func,cl)
+        local iterations = 0
+        timer.create(name,speed,count,function()
+            func(iterations)
+            
+            iterations = math.min(iterations + 1,count)
+            if iterations == count then cl() end
+            
+        end)
+    end
+    
+    local gm = unknowngame:new{
+        maxX = 8;
+        maxY = 8;
+        boardmodel = "models/holograms/hq_rcube_thin.mdl";
+        modelsize = 12;
+        modelscale = 1;
+        maxPlayers = 2;
+        addbots = false;
+    }
+    gm:create()
+    
+    local bSize = gm:getBoardSize() + gm.board.info.chunk/8
+    local bPos = gm:getBoardPos()
+    
+    function gm:calcChessCreate(holo,x,y)
+        holo:setMaterial("phoenix_storms/mrref2")
+        if not (y%2 == 0 and x%2 == 0) and (y%2 == 0 or x%2 == 0) then 
+            holo:setColor(Color(71,94,71))
+        else
+            holo:setColor(Color(134,139,134))
+        end
+        
+        if not (y%2 == 0 and x%2 == 0) and (y%2 == 0 or x%2 == 0) and y < self.board.info.maxY/2 then 
+            self:setUnit("white_dama",x,y).unit.turn = 0
+        end
+        
+        if not (y%2 == 0 and x%2 == 0) and (y%2 == 0 or x%2 == 0) and y > self.board.info.maxY/2+1 then 
+            self:setUnit("black_dama",x,y).unit.turn = 1
+        end
+    end
+    local text
+    function gm:onSpawn()
+        self.hovered = {}
+        self.selfhovered = {}
+        self.killerHover = {}
+        self.killedHover = {}
+        self.whitekilled = 0
+        self.blackkilled = 0
+    end
+    function gm:postStart()
+    end
+    function gm:onThink()
+        table.map(self.plys,function(_,ply) 
+            if ply:getTurn() ~= self:getTurn() then return end
+            local plate = self:getHoverPlate(ply)
+            local last = ply:getLastSelected()
+            if not plate or plate.selected or plate.inAnimation then return end
+            if not plate.unit then return end
+            if plate.unit.turn ~= ply:getTurn() then return end
+            if not last then 
+                self:onHover(plate)
+                return
+            end
+            
+            self:onHover(plate)
+        end)
+    end
+    local function getTurn(v)
+        return v == 1 and 1 or -1
+    end
+    
+    function gm:checkWinner(turn)
+        local white = 0
+        local black = 0
+        local canmove = {}
+        for y, row in pairs(self.board.positions) do
+            for x, plate in pairs(row) do
+                if not plate.unit then continue end
+                local moves,a = self:calcMoves(plate)
+                if #a > 0 then 
+                    if plate.unit.turn == 1 then
+                        canmove.white = true 
+                    else
+                        canmove.black = true 
+                    end
+                end
+                if plate.unit.turn == 1 then white = white + 1 else black = black + 1 end
+            end
+        end
+        self:clearHovered()
+        if black == 0 then
+            return 1
+        elseif white == 0 then
+            return 0
+        end
+        if not canmove.white and not canmove.black then
+            return -1
+        elseif not canmove.white and turn ~= 0 then
+            return 0
+        elseif not canmove.black and turn ~= 1 then
+            return 1
+        end
+    end
+    
+    function gm:clearHovered()
+        
+        for y, row in pairs(self.board.positions) do
+            for x, plate in pairs(row) do
+                plate.hover = nil
+                plate.bekilled = nil
+                if plate.unit then plate.unit.holo:removeEffects(EF.ITEM_BLINK) end
+            end
+        end
+    end
+    
+    function gm:getPlate(x,y)
+        local check = self.board.positions[y]
+        
+        if not check then 
+            return nil
+        end
+        
+        local check = self.board.positions[y][x]
+        
+        if not check then 
+            return nil
+        end
+        return check
+    end
+    function gm:dirMoves(plate,dir,unit,hovered,killedHover,killerHover,wtf)
+        
+        local quin = unit.quin
+        local turn = unit.turn
+        local startx = plate.x
+        local starty = plate.y
+        
+        local nextplate = self:getPlate(startx + dir.x,starty + dir.y)
+    
+        if not nextplate then 
+            return 
+        end
+        if plate.unit and nextplate.unit and nextplate.unit.turn == turn and plate.unit.turn == turn then 
+            return 
+        end
+        
+        if nextplate.unit and nextplate.unit.turn == turn then 
+            return
+        elseif not nextplate.unit and plate.unit and plate.unit.turn ~= turn then 
+            
+            plate.bekilled = true
+            nextplate.hover = true
+            table.insert(killerHover,nextplate)
+            table.insert(killedHover,plate)
+            plate.unit.holo:addEffects(EF.ITEM_BLINK)
+            return {
+                plate = plate,
+                x = startx + dir.x,
+                y = starty + dir.y
+            }
+            
+        end
+    
+        if not plate.unit and quin then
+            table.insert(wtf,self:dirMoves(nextplate,dir,unit,hovered,killedHover,killerHover,wtf))
+            if not nextplate.unit then
+                nextplate.hover = true
+                table.insert(hovered,nextplate)
+            end
+        end
+    
+    end
+    function gm:calcMoves(plate)
+        
+        self:clearHovered()
+        local unit = plate.unit
+        local quin = unit.quin
+        local turn = unit.turn
+        local startx = plate.x
+        local starty = plate.y
+        local killerHover = {}
+        local killedHover = {}
+        local hovered = {}
+        local selfhovered = {}
+        
+        local wtf = {}
+        
+        self:clearHovered()
+        
+        for i = 1,8,2 do
+            
+            local dir = Vector(math.round(math.sin(math.rad(45 * (i - 4)))), math.round(math.cos(math.rad(45 * (i - 4)))), 0)
+            
+            local nextplate = self:getPlate(startx + dir.x,starty + dir.y)
+            
+            if not nextplate then 
+                continue 
+            end
+            
+            if nextplate.unit and nextplate.unit.turn == turn then 
+                continue
+            end
+            if not nextplate.unit and (quin or getTurn(turn) ~= dir.y) then
+                nextplate.hover = true
+                table.insert(hovered,nextplate)
+                table.insert(selfhovered,nextplate)
+            end
+            table.insert(wtf,self:dirMoves(nextplate,dir,unit,hovered,killedHover,killerHover,wtf))
+        end
+        
+        if #killedHover > 0 then
+            for _,h in ipairs(hovered) do
+                h.hover = nil
+            end
+            return wtf,killerHover
+        end
+        
+        return wtf,hovered
+    
+    end
+    function gm:botThink(bot)
+        
+        if bot:getTurn() ~= self:getTurn() then return end
+        
+        local aval = {}
+        if not bot.lock then
+            for y, row in pairs(self.board.positions) do
+                for x, plate in pairs(row) do
+                    if not plate.unit or plate.unit.turn ~= bot:getTurn() then continue end
+                    local moves,hovered = self:calcMoves(plate)
+                    if #hovered > 0 then
+                        table.insert(aval,{x=x,y=y,plate=plate,moves=hovered})
+                    end
+                    
+                end
+            end
+            local inx = table.random(aval)
+            if not inx then self:calcTurn() print("\n"..bot.name.." skip turn")return end
+            self:_onClick(bot,inx.plate,IN_KEY.USE,inx.x,inx.y)
+            
+            local inx2 = table.random(inx.moves)
+            if not inx2 then self:calcTurn() print("\n"..bot.name.." skip turn")return end
+            self:_onClick(bot,inx2,IN_KEY.USE,inx2.x,inx2.y)
+        else
+            local inx2 = table.random(bot.lock)
+            
+            self:_onClick(bot,inx2,IN_KEY.USE,inx2.x,inx2.y)
+        end
+        
+        bot:setUsed(IN_KEY.USE)
+    end
+    function gm:calcTurn()
+        self.turn = (self.turn + 1) % 2
+    end
+    function gm:clearempty()
+        for _,plate in ipairs(self.selfhovered) do
+            plate.hover = nil
+        end
+        table.empty(self.selfhovered)
+    end
+    function gm:checkquin(plate)
+    
+        local bool = plate.y == (self.board.info.maxY - 1) * (1 - plate.unit.turn) + 1
+        if bool then 
+            plate.unit.quin = true 
+            plate.unit:rescale(Vector(1,1,4))
+        end
+        return bool
+    end
+    
+    function gm:onClick(ply,plate,key,x,y)
+        
+        if ply:getTurn() ~= self:getTurn() then return end
+        if plate.unit and plate.unit.turn ~= ply:getTurn() then return end
+        
+        local From = ply:getLastSelected()
+        
+        if key == IN_KEY.USE then
+            
+            if not From then
+                
+                if not plate.unit then return end
+                ply.moves = self:calcMoves(plate)
+                self:select(ply,plate)
+                
+            elseif plate.hover then
+                self:unselect(ply,From)
+                From.base:emitSound("physics/body/body_medium_impact_soft3.wav")
+                
+                for i,move in ipairs(ply.moves) do
+                    if plate.x == move.x and plate.y == move.y then
+                        move.plate.unit:die(true)
+                        move.plate.unit.holo:setParent(nil)
+                        local pos
+                        if move.plate.unit.turn == 1 then
+                            pos = (self.startPos + (move.plate.unit.info.offset + Vector(bPos*2,self.whitekilled*9,0)* move.plate.unit.info.scale))
+                            self.whitekilled = self.whitekilled + 1
+                        else
+                            pos = (self.startPos + (move.plate.unit.info.offset + Vector(0,bPos*2 - self.blackkilled*9,0)* move.plate.unit.info.scale))
+                            self.blackkilled = self.blackkilled + 1
+                        end
+    
+                        self:killMove(move.plate,pos)
+                        
+                        ply.killer = true
+                    end
+                end
+                
+                self:moveFromTo(From,plate,function()
+                    self:checkquin(plate)
+                    self:clearHovered()
+                    
+                    ply.moves,forbot = self:calcMoves(plate)
+    
+                    if #ply.moves > 0 and ply.killer then 
+                        
+                        self:select(ply,plate)
+                        ply.killer = nil
+                        ply.lock = forbot
+                        return
+                    end
+                    ply.lock = nil
+                    ply.killer = nil
+                    winner = self:checkWinner(plate.turn)
+                    
+                    self:calcTurn()
+                    
+                    
+                    if winner then 
+                        chip():emitSound("ui/achievement_earned.wav")
+    
+                        PHAZE = "GAME OVER"
+                        
+                        setTimeout(function() 
+                            print("restarting") 
+                            self:restart() 
+                            net.start("gameend")
+                            if winner ~= -1 then
+                                net.writeUInt(self.plys[winner + 1]:getUserID(),16)
+                            end
+                            net.send(nil,false)
+                        end, 2000)
+                    end
+                end) 
+                
+            elseif not ply.lock and From ~= plate and plate.unit then
+                ply.moves = self:calcMoves(plate)
+                self:unselect(ply,From)
+                self:select(ply,plate)
+                
+            elseif not ply.lock and From == plate and plate.unit then
+                self:unselect(ply,From)
+                self:clearHovered()
+            elseif not plate.hover then
+                plate.base:emitSound("buttons/button10.wav")
+            end
+            
+        elseif key == IN_KEY.RELOAD and ply.lock then
+          
+        end
+    end
+
+else
+    local fontArial72 = render.createFont("Arial",54,500,true,false,false,false,0,false,0)
+    setupPermissionRequest({"render.hud","enablehud"}, "To start play\n1: Grand \n2: Apply Permissions \n3: Waiting other players", true)
+    local this = 3
+    local players = {}
+    local startpos = chip():getPos()
+    local chunk = (12*4 + 6) * 1
+    local meInGame = false
+    hook.add("permissionrequest", "Grand -> Apply Permissions", function()
+        if permissionRequestSatisfied() then
+            enableHud(player(),true)
+            net.start("connected")
+            net.send()
+            connected = true
+        end
+    end)
+    net.receive("startgame",function()
+        this = 1
+        players = net.readTable()
+        for _,ply in pairs(players) do
+            if player(ply) == player() then 
+                meInGame = true
+            end
+        end
+    end)
+    net.receive("gameend",function()
+        winner = net.readUInt(16)
+        if connected then 
+            this = 2 
+            local pressed
+            hook.add("inputpressed","retry/exit",function(key)
+                if pressed then return end
+                if key == KEY.E then
+                    pressed = true
+                    this = 3
+                    net.start("connected")
+                    net.send()
+                    hook.remove("inputpressed","retry/exit")
+                elseif key == KEY.R then
+                    meInGame = false
+                    pressed = true
+                    enableHud(player(),false)
+                    hook.remove("inputpressed","retry/exit")
+                end
+            end)
+        end
+    end)
+    net.receive("exitgame",function()
+        local id = net.readUInt(16)
+        if player(id) == player() then
+            meInGame = false
+        end
+        for i,ply in pairs(players) do
+            if ply == 0 then 
+                continue 
+            end
+            if id == player(ply):getUserID() then 
+                players[i] = 0
+            end
+        end
+    end)
+    hook.add("postdrawhud","hud",function()
+        render.setFont(fontArial72)
+        local pos = startpos + Vector(chunk,chunk,60)
+
+        if this == 1 then 
+            
+            for turn,ply in pairs(players) do
+                render.setColor((Color(255,255,255) * (2-turn)):setA(255))
+                local pos = pos+Vector(0,chunk * (turn == 2 and 1 or -1),0)
+                if pos:getDistanceSqr(player():getShootPos()) < 55^2 then continue end
+                pos = pos:toScreen()
+                if ply == 0 then 
+                    render.drawText(pos.x,pos.y,"**BOT**",1)
+                else
+                    render.drawText(pos.x,pos.y,player(ply):getName(),1)
+                end
+            end
+            
+        elseif this == 2 then
+            
+            pos = pos:toScreen()
+            render.setColor(Color(255,0,0))
+            if meInGame then
+                render.drawText(pos.x,pos.y,"press E to retry",1)
+            else
+                render.drawText(pos.x,pos.y,"press E to start",1)
+            end
+            local pos = (startpos + Vector(chunk,chunk,40)):toScreen()
+            render.setColor(Color(255,255,255))
+            if winner then
+                render.drawText(pos.x,pos.y,"WIN: "..(winner ~= 0 and player(winner):getName() or "BOT"),1)
+            else
+                render.drawText(pos.x,pos.y,"Draw!",1)
+            end
+            
+        elseif this == 3 then
+            
+            pos = pos:toScreen()
+            render.setColor(Color(255,0,0))
+            render.drawText(pos.x,pos.y,"waiting other players",1)
+            
+        end
+    end)
+end
+
+
+
+
+
+
+
+
+
