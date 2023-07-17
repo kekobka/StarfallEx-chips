@@ -1,0 +1,127 @@
+--@name valeras/libs/scene
+--@author valera 41 // kekobka // STEAM_0:0:186583728
+--@shared
+
+-- нахуй я это делал вообще 
+
+--[[
+
+            ██╗░░██╗███████╗██╗░░██╗░█████╗░██████╗░██╗░░██╗░█████╗░
+            ██║░██╔╝██╔════╝██║░██╔╝██╔══██╗██╔══██╗██║░██╔╝██╔══██╗
+            █████═╝░█████╗░░█████═╝░██║░░██║██████╦╝█████═╝░███████║
+            ██╔═██╗░██╔══╝░░██╔═██╗░██║░░██║██╔══██╗██╔═██╗░██╔══██║
+            ██║░╚██╗███████╗██║░╚██╗╚█████╔╝██████╦╝██║░╚██╗██║░░██║
+            ╚═╝░░╚═╝╚══════╝╚═╝░░╚═╝░╚════╝░╚═════╝░╚═╝░░╚═╝╚═╝░░╚═╝
+
+]]--
+
+
+local scene = class("scene")
+local object = class("object")
+
+function object:initialize(type,pos,ang,color,size,mat,normal)
+
+    self.type = type
+    self.pos = pos
+    self.ang = ang
+    self.size = size
+    self.color = color
+    self.mat = mat
+    self.normal = normal
+    
+end
+function scene:initialize()
+    
+    self.objects = {}
+    self.lights = {}
+    
+    function self:addObject(...)
+        table.insert(self.objects,object(...))
+    end
+    
+    function self:addLight(...)
+        local obj = object(...)
+        table.insert(self.lights,obj)
+        table.insert(self.objects,obj)
+    end
+    
+end
+
+return scene
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

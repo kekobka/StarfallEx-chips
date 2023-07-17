@@ -1,0 +1,82 @@
+--@name valeras/libs/limb
+--@author valera 41 // kekobka // STEAM_0:0:186583728
+--@shared
+
+-- это кринж стикмен руки 
+
+--[[
+
+            ██╗░░██╗███████╗██╗░░██╗░█████╗░██████╗░██╗░░██╗░█████╗░
+            ██║░██╔╝██╔════╝██║░██╔╝██╔══██╗██╔══██╗██║░██╔╝██╔══██╗
+            █████═╝░█████╗░░█████═╝░██║░░██║██████╦╝█████═╝░███████║
+            ██╔═██╗░██╔══╝░░██╔═██╗░██║░░██║██╔══██╗██╔═██╗░██╔══██║
+            ██║░╚██╗███████╗██║░╚██╗╚█████╔╝██████╦╝██║░╚██╗██║░░██║
+            ╚═╝░░╚═╝╚══════╝╚═╝░░╚═╝░╚════╝░╚═════╝░╚═╝░░╚═╝╚═╝░░╚═╝
+
+]]--
+
+
+
+local limb = class("limb")
+local function cosrules(A, B, C)
+    return math.deg(    math.acos(  (A^2 + B^2 - C^2) / (2*A*B) )  )
+end
+function limb:initialize(Parent,offset,Ang,offAng,Length1,Length2,side,arm)
+    
+    self.Parent = Parent
+    self.Length1 = Length1
+    self.Length2 = Length2
+    self.Cpos = Parent:localToWorld(offset)
+    self.offset = offset
+    self.offAng = offAng
+    self.side = side == "left" and 1 or -1
+    self.CAng = Ang
+    self.holos = {}
+    self.arm = arm and -1 or 1
+    local tr = trace.line(Parent:getPos() + offset,Parent:getPos() + offset - Vector(0,0,Length1+Length2),Parent)
+    self.targetPos = tr.HitPos
+    self.Pitch1 = 0
+    self.Tilt1 = 0
+    function limb:createholos()
+
+         self.Dot1 = holograms.create(self.Parent:localToWorld(self.offset),self.CAng, "models/holograms/hq_sphere.mdl", Vector(0.0)) self.Dot1:setParent(self.Parent)
+         self.Dot2 = holograms.create(self.Dot1:getPos(),self.CAng, "models/holograms/hq_sphere.mdl", Vector(0.0)) self.Dot2:setParent(self.Dot1)
+         self.Dot3 = holograms.create(self.Dot2:getPos(),self.CAng, "models/holograms/hq_sphere.mdl", Vector(0.5)) self.Dot3:setParent(self.Dot2) self.Dot3:setSize(Vector(4)) self.Dot3:setColor(Color(255,255,0,255))
+         self.Dot4 = holograms.create(self.Dot3:localToWorld(Vector(0,0,self.Length1)),self.CAng, "models/holograms/hq_sphere.mdl", Vector(0.5)) self.Dot4:setParent(self.Dot3) self.Dot4:setSize(Vector(4)) self.Dot4:setColor(Color(0,0,0,255))
+         self.Dot5 = holograms.create(self.Dot4:localToWorld(Vector(0,0,self.Length2)),self.CAng, "models/holograms/hq_sphere.mdl", Vector(0.5)) self.Dot5:setParent(self.Dot4) self.Dot5:setSize(Vector(4)) self.Dot5:setColor(Color(0,0,0,255))
+         local line1 = holograms.create((self.Dot4:getPos()+self.Dot3:getPos())/2,self.CAng, "models/holograms/hq_tube.mdl", Vector(0.5)) line1:setParent(self.Dot3) line1:setSize(Vector(4,4,(self.Dot4:getPos()):getDistance(self.Dot3:getPos()))) line1:setColor(Color(255,255,0,255))
+         local line2 = holograms.create((self.Dot5:getPos()+self.Dot4:getPos())/2,self.CAng, "models/holograms/hq_tube.mdl", Vector(0.5)) line2:setParent(self.Dot4) line2:setSize(Vector(4,4,(self.Dot5:getPos()):getDistance(self.Dot4:getPos()))) line2:setColor(Color(0,0,0,255))
+    end
+    self:createholos()
+    return self
+end
+
+function limb:moveTo(End)
+    local Dist = math.clamp(self.Dot1:getPos():getDistance(End),0,self.Length1+self.Length2)
+    
+    local Pitch = (Vector((self.Parent:worldToLocal(End)).x,(self.Parent:worldToLocal(End)-self.offset).z)-Vector(self.Parent:worldToLocal(self.Dot1:getPos()).x,self.Dot1:worldToLocal(self.Dot1:getPos()).z)):getAngle().y
+    local Tilt = (Vector(self.Dot1:worldToLocal(End).y,self.Dot1:worldToLocal(End).x)-Vector(self.Dot1:worldToLocal(self.Dot3:getPos()).y,self.Dot1:worldToLocal(self.Dot3:getPos()).x)):getAngle().y
+
+
+    self.Dot1:setAngles( self.Parent:localToWorldAngles(Angle(-Pitch,0,0)))
+    self.Dot2:setAngles( self.Dot1:localToWorldAngles(Angle(0, -Tilt+90, self.side * math.abs(Tilt+90 * self.arm ))))
+    self.Dot3:setAngles( self.Dot2:localToWorldAngles(Angle(cosrules(Dist,self.Length1,self.Length2)+90 ,0,0))+self.offAng)
+    self.Dot4:setAngles( self.Dot3:localToWorldAngles(Angle(cosrules(self.Length1,self.Length2,Dist)+180,0,0)))
+end
+
+
+return limb
+
+
+
+
+
+
+
+
+
+
+
+
+
+

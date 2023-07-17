@@ -1,0 +1,130 @@
+--@name valeras/libs/multiscreen
+--@author discord.gg/6Q5NnHQTrh // kekobka // STEAM_0:0:186583728
+--@shared
+
+-- хуета иногда багует либо я просто даун
+
+--[[
+
+            ██╗░░██╗███████╗██╗░░██╗░█████╗░██████╗░██╗░░██╗░█████╗░
+            ██║░██╔╝██╔════╝██║░██╔╝██╔══██╗██╔══██╗██║░██╔╝██╔══██╗
+            █████═╝░█████╗░░█████═╝░██║░░██║██████╦╝█████═╝░███████║
+            ██╔═██╗░██╔══╝░░██╔═██╗░██║░░██║██╔══██╗██╔═██╗░██╔══██║
+            ██║░╚██╗███████╗██║░╚██╗╚█████╔╝██████╦╝██║░╚██╗██║░░██║
+            ╚═╝░░╚═╝╚══════╝╚═╝░░╚═╝░╚════╝░╚═════╝░╚═╝░░╚═╝╚═╝░░╚═╝
+
+]]--
+local MS = class("MultiScreen")
+
+function MS:initialize(f)
+    self._SCREENS = {}
+    self.showid = f
+--[[
+    hook.add("ComponentLinked", table.address(self), function(ent)
+        if ent:getClass() ~= "starfall_screen" then
+            return
+        end
+        if not mainscreen then
+            mainscreen = ent
+        end
+        table.insert(_SCREENS,ent)
+    end)
+]]
+    hook.add("render",table.address(self),function()
+        self:render()
+    end)
+end
+
+
+function MS:renderScreen(id)
+    hook.run("render:"..id)
+    if self.showid then
+        render.drawSimpleText(50,30,tostring(id),1,1)
+    end
+end
+function MS:render(id)
+    if not id then
+        for id, screen in pairs(chip():getLinkedComponents()) do
+            self._SCREENS[screen] = id
+        end
+    elseif self._SCREENS[id] then
+        self:renderScreen(id)
+        return
+    end
+    local id = self._SCREENS[render.getScreenEntity()] or 0
+    self:renderScreen(id)
+end
+
+
+return MS
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

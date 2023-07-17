@@ -1,0 +1,157 @@
+--@name valeras/libs/intersect
+--@author valera 41 // kekobka // STEAM_0:0:186583728
+--@shared
+
+--[[
+
+            ██╗░░██╗███████╗██╗░░██╗░█████╗░██████╗░██╗░░██╗░█████╗░
+            ██║░██╔╝██╔════╝██║░██╔╝██╔══██╗██╔══██╗██║░██╔╝██╔══██╗
+            █████═╝░█████╗░░█████═╝░██║░░██║██████╦╝█████═╝░███████║
+            ██╔═██╗░██╔══╝░░██╔═██╗░██║░░██║██╔══██╗██╔═██╗░██╔══██║
+            ██║░╚██╗███████╗██║░╚██╗╚█████╔╝██████╦╝██║░╚██╗██║░░██║
+            ╚═╝░░╚═╝╚══════╝╚═╝░░╚═╝░╚════╝░╚═════╝░╚═╝░░╚═╝╚═╝░░╚═╝
+
+]]--
+ -- пизженное юзается в RTX
+
+local DBL_EPSILON = 2.2204460492503131e-16
+
+local function lineVSline(x1,y1,x2,y2,x3,y3,x4,y4)
+    
+    local den = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
+    if den == 0 then return false end
+    
+    local t = ( (x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4) ) / den
+    local u = - ( (x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3) ) / den
+    
+    if t > 0 and t < 1 and u > 0 then 
+        return {x = x1 + t * (x2 - x1),y =y1 + t * (y2 - y1)}
+    else 
+        return false 
+    end
+end
+
+
+local function rayVSPlane(ray,plane)
+
+    local a = plane.normal:dot(ray.dir)
+    
+    if a < 0 then
+        local b = plane.normal:dot(plane.pos - ray.pos)
+        
+        if b < 0 then
+            return ray.pos + ray.dir * (b/a) , plane.normal
+        end
+    elseif a == 0 then
+        if plane.normal:dot(plane.pos - ray.pos) == 0 then
+            return ray.pos, plane.normal
+        end
+    end
+    
+    return nil
+end
+local function rayVSSphere(ray,sphere)
+
+    local offset = ray.pos - sphere.pos
+    local b = offset:dot(ray.dir)
+    local c = offset:dot(offset) - sphere.size * sphere.size
+    if c > 0 and b > 0 then
+        return false
+    end
+    local discr = b * b - c
+    if discr < 0 then
+        return false
+    end
+    local t = math.max(-b - math.sqrt(discr),0)
+    local hitpos = ray.pos + ray.dir * t
+    local hitnormal = (hitpos-sphere.pos):getNormalized()
+    return hitpos, hitnormal
+
+end
+
+return {
+    LVSL = lineVSline,
+    LVSS = rayVSSphere,
+    LVSP = rayVSPlane
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

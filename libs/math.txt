@@ -1,0 +1,319 @@
+--@name valeras/libs/math
+--@author valera 41 // kekobka // STEAM_0:0:186583728
+
+--[[
+
+            ██╗░░██╗███████╗██╗░░██╗░█████╗░██████╗░██╗░░██╗░█████╗░
+            ██║░██╔╝██╔════╝██║░██╔╝██╔══██╗██╔══██╗██║░██╔╝██╔══██╗
+            █████═╝░█████╗░░█████═╝░██║░░██║██████╦╝█████═╝░███████║
+            ██╔═██╗░██╔══╝░░██╔═██╗░██║░░██║██╔══██╗██╔═██╗░██╔══██║
+            ██║░╚██╗███████╗██║░╚██╗╚█████╔╝██████╦╝██║░╚██╗██║░░██║
+            ╚═╝░░╚═╝╚══════╝╚═╝░░╚═╝░╚════╝░╚═════╝░╚═╝░░╚═╝╚═╝░░╚═╝
+
+]]--
+
+-- блять тут есть ебейшие функции
+
+local min = math.min
+local max = math.max
+local round = math.round
+
+function math.fibonacciSphere(radius,n)
+    local points = {}
+    local phi = math.pi * (3 - math.sqrt(5))
+    for i = 1, n  do
+        local y =  1 - ( i / (n - 1) ) * 2
+        local r = math.sqrt(1 - y^2)
+        local theta = phi * i
+        local x = math.cos(theta) * r
+        local z = math.sin(theta) * r
+        local pos = Vector( x, y, z ) * radius
+        table.forceInsert(points,pos)
+    end
+    return points
+end
+function rotateY(self,angle)
+        local c = math.cos(angle)
+        local s = math.sin(angle)
+        return Vector(self.x * c - self.z * s, self.z * c + self.x * s)
+end
+
+function math.createHyperbolicPartition(numU, numV)
+    local partition = {}
+    
+    local uStep = 1.0 / (numU + 1)
+    local vStep = 2 * math.pi / numV
+    
+    for i = 1, numU do
+        local u = i * uStep
+        
+        for j = 0, numV - 1 do
+            local v = j * vStep
+            
+            local x = u * math.acosh(v)
+            local y = u * math.asinh(v)
+            
+            table.insert(partition, {x = x, y = y})
+        end
+    end
+    
+    return partition
+end
+function math.divideTriangle(v1, v2, v3)
+
+    local epsilon = 2
+    local dx = v2.x - v1.x
+    local dy = v2.y - v1.y
+    local size = math.sqrt(dx * dx + dy * dy)
+    if size < epsilon then
+        return
+    end
+ 
+    render.drawLine(v1.x, v1.y, v2.x, v2.y)
+    render.drawLine(v2.x, v2.y, v3.x, v3.y)
+    render.drawLine(v3.x, v3.y, v1.x, v1.y)
+   
+    local v12 = { x = (v1.x + v2.x) / 2, y = (v1.y + v2.y) / 2 }
+    local v23 = { x = (v2.x + v3.x) / 2, y = (v2.y + v3.y) / 2 }
+    local v31 = { x = (v3.x + v1.x) / 2, y = (v3.y + v1.y) / 2 }
+ 
+    divideTriangle(v1, v12, v31)
+    divideTriangle(v12, v2, v23)
+    divideTriangle(v31, v23, v3)
+end
+
+
+function math.recursiveSubdivide(cells, cell, level, maxSubdivisions)
+
+    if level >= maxSubdivisions then
+        return
+    end
+  
+    local newWidth = cell.w / 2
+    local newHeight = cell.h / 2
+
+    local topLeft = {x = cell.x, y = cell.y, w = newWidth, h = newHeight}
+    local topRight = {x = cell.x + newWidth, y = cell.y, w = newWidth, h = newHeight}
+    local bottomLeft = {x = cell.x, y = cell.y + newHeight, w = newWidth, h = newHeight}
+    local bottomRight = {x = cell.x + newWidth, y = cell.y + newHeight, w = newWidth, h = newHeight}
+
+    --     
+    table.insert(cells, topLeft)
+    table.insert(cells, topRight)
+    table.insert(cells, bottomLeft)
+    table.insert(cells, bottomRight)
+
+    --    
+    math.recursiveSubdivide(cells, topLeft, level + 1, maxSubdivisions)
+    math.recursiveSubdivide(cells, topRight, level + 1, maxSubdivisions)
+    math.recursiveSubdivide(cells, bottomLeft, level + 1, maxSubdivisions)
+    math.recursiveSubdivide(cells, bottomRight, level + 1, maxSubdivisions)
+end
+
+function math.createSpherePartition(numLatitudes, numLongitudes)
+    local partition = {}
+    
+    local latitudeStep = math.pi / (numLatitudes + 1)
+    local longitudeStep = 2 * math.pi / numLongitudes
+    
+    for i = 1, numLatitudes do
+        local latitude = i * latitudeStep
+        
+        for j = 0, numLongitudes - 1 do
+            local longitude = j * longitudeStep
+            
+            local x = math.sin(latitude) * math.cos(longitude)
+            local y = math.sin(latitude) * math.sin(longitude)
+            local z = math.cos(latitude)
+            
+            table.insert(partition, {x = x, y = y, z = z})
+        end
+    end
+    
+    return partition
+end
+
+local function createTriangle(a, b, c)
+    return {a, b, c}
+end
+function math.tessellateSphere(radius, p1, p2)
+    local triangles = {}
+    
+    
+    for i = 1, numSubdivisions do
+        local newTriangles = {}
+        for _, triangle in ipairs(triangles) do
+            local a, b, c = triangle[1], triangle[2], triangle[3]
+            local ab = a + b
+            local bc = b + c
+            local ca = c + a
+
+            table.insert(newTriangles, {a, ab, ca})
+            table.insert(newTriangles, {ab, b, bc})
+            table.insert(newTriangles, {ca, bc, c})
+            table.insert(newTriangles, {ab, bc, ca})
+        end
+        triangles = newTriangles
+    end
+
+    local tbl = {}
+    for _, triangle in ipairs(triangles) do
+        for _, vertex in ipairs(triangle) do
+            vertex:normalize()
+            vertex = vertex * radius
+            table.insert(tbl,{pos = vertex})
+        end
+    end
+
+    return tbl
+end
+local phi = (1 + math.sqrt(5)) / 2
+function math.icosphere(scale,subdivisions)
+    
+    local vertices = {
+        Vector( -1,  phi, 0 ):getNormalized()*scale,
+        Vector(  1,  phi, 0 ):getNormalized()*scale,
+        Vector( -1, -phi, 0 ):getNormalized()*scale,
+        Vector(  1, -phi, 0 ):getNormalized()*scale,
+        
+        Vector( 0, -1,  phi ):getNormalized()*scale,
+        Vector( 0,  1,  phi ):getNormalized()*scale,
+        Vector( 0, -1, -phi ):getNormalized()*scale,
+        Vector( 0,  1, -phi ):getNormalized()*scale,
+        
+        Vector(  phi, 0, -1 ):getNormalized()*scale,
+        Vector(  phi, 0,  1 ):getNormalized()*scale,
+        Vector( -phi, 0, -1 ):getNormalized()*scale,
+        Vector(-phi, 0,  1 ):getNormalized()*scale
+    }
+
+    local indices = {1, 12, 6, 1, 6, 2, 1, 2, 8, 1, 8, 11, 1, 11, 12, 2, 6, 10, 6, 12, 5, 12, 11, 3, 11, 8, 7, 8, 2, 9, 4, 10, 5, 4, 5, 3, 4, 3, 7, 4, 7, 9, 4, 9, 10, 5, 10, 6, 3, 5, 12, 7, 3, 11, 9, 7, 8, 10, 9, 2}
+
+    local splits = {}   
+    local MESH = {}
+    local function split(i, j)
+        local key = i < j and (i .. ',' .. j) or (j .. ',' .. i)
+        
+        if not splits[key] then
+            local x = (vertices[i][1] + vertices[j][1]) / 2
+            local y = (vertices[i][2] + vertices[j][2]) / 2
+            local z = (vertices[i][3] + vertices[j][3]) / 2
+            table.insert(vertices, Vector(x, y, z):getNormalized()*scale)
+            splits[key] = #vertices
+        end
+    
+        return splits[key]
+    end
+
+    for _ = 1, subdivisions or 0 do
+        for i = #indices, 1, -3 do
+            local v1, v2, v3 = indices[i - 2], indices[i - 1], indices[i - 0]
+            local a = split(v1, v2)
+            local b = split(v2, v3)
+            local c = split(v3, v1)
+            
+            table.insert(indices, v1)
+            table.insert(indices, a)
+            table.insert(indices, c)
+            
+            table.insert(indices, v2)
+            table.insert(indices, b)
+            table.insert(indices, a)
+            
+            table.insert(indices, v3)
+            table.insert(indices, c)
+            table.insert(indices, b)
+            
+            table.insert(indices, a)
+            table.insert(indices, b)
+            table.insert(indices, c)
+            
+            table.remove(indices, i - 0)
+            table.remove(indices, i - 1)
+            table.remove(indices, i - 2)
+        end
+    end
+    for K , V in ipairs(indices) do
+        if not vertices[V] then break end
+        table.insert(MESH , {pos = vertices[V] * -1})
+    end
+    return MESH
+end
+
+function math.reflect(vector, normal)
+    return (vector - 2 * (normal:dot(vector) * normal))
+end
+
+function math.clampcolor(color, colormin, colormax)
+    return Color(
+        math.clamp(color.r, colormin.r, colormax.r),
+        math.clamp(color.g, colormin.g, colormax.g),
+        math.clamp(color.b, colormin.b, colormax.b),
+        255
+    ) 
+end
+
+function math.step(This,Step) 
+    return Vector(round(This.x / Step) * Step, round(This.y / Step) * Step, This.z)
+end
+
+function math.asinh(x)
+    return math.log(x + math.sqrt(x ^ 2 + 1)) 
+end
+
+function math.acosh(x)
+    return math.log(x + math.sqrt(x*x - 1))
+end
+
+function math.atanh(x)
+    return math.log((1 + x) / (1 - x)) / 2
+end
+////// EXAMPLE
+--[[
+
+if CLIENT then
+    
+vertices = math.tessellateSphere(25,3,3)
+
+v = holograms.create(chip():localToWorld( Vector(0,0,50) ), Angle(), "models/sprops/cuboids/height06/size_1/cube_6x6x6.mdl" , Vector(1,1,1))
+
+
+
+
+
+for K = 1, #vertices, 3 do
+    local pos1 = vertices[K].pos
+    local pos2 = vertices[K + 1].pos
+    local pos3 = vertices[K + 2].pos
+    local dist1 = pos1:getDistance(pos2)
+    local dist2 = pos2:getDistance(pos3)
+    local dist3 = pos3:getDistance(pos1)
+    local pos11 = (pos1 + pos2) / 2
+    local pos22 = (pos2 + pos3) / 2
+    local pos33 = (pos3 + pos1) / 2
+    holograms.create(chip():localToWorld( Vector(0,0,50) ) + pos11, (pos1-pos2):getAngle() + Angle(90,0,0), "models/sprops/cylinders/size_5/cylinder_12x480.mdl" , Vector(1,1,1)):setSize(Vector(0.5,0.5,dist1))
+    holograms.create(chip():localToWorld( Vector(0,0,50) ) + pos22, (pos2-pos3):getAngle() + Angle(90,0,0), "models/sprops/cylinders/size_5/cylinder_12x480.mdl" , Vector(1,1,1)):setSize(Vector(0.5,0.5,dist2))
+    holograms.create(chip():localToWorld( Vector(0,0,50) ) + pos33, (pos3-pos1):getAngle() + Angle(90,0,0), "models/sprops/cylinders/size_5/cylinder_12x480.mdl" , Vector(1,1,1)):setSize(Vector(0.5,0.5,dist3))
+end
+
+
+
+
+
+
+
+mesh.generateUV(vertices, 0.05)
+mesh.generateNormals(vertices,true)
+
+vertices = mesh.createFromTable(vertices)
+v:setMesh(vertices)
+v:setRenderBounds(Vector(-200), Vector(200))
+
+
+
+
+end
+]]
+
+
+

@@ -1,0 +1,148 @@
+--@name valeras/libs/string
+--@author discord.gg/6Q5NnHQTrh // kekobka // STEAM_0:0:186583728
+--@shared
+
+-- люблю стринги
+
+--[[
+
+            ██╗░░██╗███████╗██╗░░██╗░█████╗░██████╗░██╗░░██╗░█████╗░
+            ██║░██╔╝██╔════╝██║░██╔╝██╔══██╗██╔══██╗██║░██╔╝██╔══██╗
+            █████═╝░█████╗░░█████═╝░██║░░██║██████╦╝█████═╝░███████║
+            ██╔═██╗░██╔══╝░░██╔═██╗░██║░░██║██╔══██╗██╔═██╗░██╔══██║
+            ██║░╚██╗███████╗██║░╚██╗╚█████╔╝██████╦╝██║░╚██╗██║░░██║
+            ╚═╝░░╚═╝╚══════╝╚═╝░░╚═╝░╚════╝░╚═════╝░╚═╝░░╚═╝╚═╝░░╚═╝
+
+]]--
+//local text = Stringer:new(string text ,number speed, number rate, number timeout,func callback)
+local Stringer = class("Stringer")
+
+Stringer.HACKERSTRING = function(i,l,t)
+    local ret = string.explode("",t)
+    for j = i, l do
+        ret[j] = string.utf8char(math.random(200,500))
+    end
+    return table.concat(ret)
+end
+
+function Stringer:included(target)
+    
+end
+
+Stringer.HACKERSTRINGRANDOM = function(i,l,t)
+    local ret = string.explode("",t)
+    for j = i, l do
+        ret[math.random(1,#ret)] = string.utf8char(math.random(200,500))
+    end
+    return table.concat(ret)
+end
+
+function Stringer:initialize(target,speed,rate,timeout,fn)
+    
+    function self:restart(newstr)
+        if newstr then
+            self.target = newstr
+            self.length = newstr:len()
+        end
+        local i = 1
+        self.co = coroutine.create(function()
+            while true do
+                self.draw = fn(math.floor(i)+1,self.length,self.target)
+                coroutine.wait(rate/1000)
+                if i >= self.length then coroutine.wait(timeout) end
+                i = (i%self.length) + ( self.length * speed ) / 10
+            end
+        end)
+    end
+    self:restart(target)
+end
+
+function Stringer:get()
+    coroutine.resume(self.co)
+    return self.draw
+end
+
+/*
+--include ./ismain.txt
+local isMain = dofile("./ismain.txt") 
+
+if isMain and CLIENT then
+    local fontArial2552 = render.createFont("Arial",40,500,true,false,false,false,0,false,0)
+    
+    local hackerString = Stringer:new("Hacker string",0.3,50,1,Stringer.HACKERSTRING)
+    local hackerStringRandomized = Stringer:new("Hacker string randomized",0.3,50,1,Stringer.HACKERSTRINGRANDOM)
+    
+    hook.add("render","",function()
+        render.setFont(fontArial2552)
+        render.drawText(256,0,hackerString:get(),1)
+        render.drawText(256,40,hackerStringRandomized:get(),1)
+    end)
+end
+
+*/
+return Stringer
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

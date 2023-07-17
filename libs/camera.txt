@@ -1,0 +1,217 @@
+--@name valeras/libs/camera
+--@author valera 41 // kekobka // STEAM_0:0:186583728
+--@shared
+-- самая бесполезная либа
+--[[
+
+            ██╗░░██╗███████╗██╗░░██╗░█████╗░██████╗░██╗░░██╗░█████╗░
+            ██║░██╔╝██╔════╝██║░██╔╝██╔══██╗██╔══██╗██║░██╔╝██╔══██╗
+            █████═╝░█████╗░░█████═╝░██║░░██║██████╦╝█████═╝░███████║
+            ██╔═██╗░██╔══╝░░██╔═██╗░██║░░██║██╔══██╗██╔═██╗░██╔══██║
+            ██║░╚██╗███████╗██║░╚██╗╚█████╔╝██████╦╝██║░╚██╗██║░░██║
+            ╚═╝░░╚═╝╚══════╝╚═╝░░╚═╝░╚════╝░╚═════╝░╚═╝░░╚═╝╚═╝░░╚═╝
+
+]]--
+
+
+
+GLOBAL_EYEPOS = Vector()
+GLOBAL_ZOOM = 1
+CAMERA_OFFSET = Vector(0,0,90)
+CAMERA_OFFSETWALK = Vector()
+local camera = class("camera")
+
+if SERVER then
+    
+    function camera:initialize(body,seat)
+        self.body = body
+        self.seat = seat
+        self.offset = CAMERA_OFFSET
+        self.eye = self.body:getForward()
+        self._eye = self.eye
+        self.pos = self.body:localToWorld(self.offset)
+        self.user = nil
+        self.__index = self
+        net.receive("initCAMERA",function(len,pl) net.start("initCAMERA") net.writeEntity(self.body) net.send(pl) end)
+         
+        local function set_driver(ply, vehicle, role)
+            if vehicle ~= self.seat then return end
+        enableHud(ply,role != nil and true or false)
+        self.user = role != nil and ply or nil
+            if self.user ~= nil then
+                self:onEnter(self.user)
+            else
+                self:onLeave(ply)
+            end
+        end
+        
+        hook.add("PlayerEnteredVehicle", "camera."..table.address(self), set_driver)
+        hook.add("PlayerLeaveVehicle", "camera."..table.address(self), set_driver)
+    end
+    
+    function camera:onMoved(fn)
+        net.receive("eye",function(len,pl)
+            self.eye = net.readVector() 
+            //if self._eye ~= self.eye then
+                fn(self.eye,self.body:localToWorld(self.offset))
+            //end
+            self._eye = self.eye
+        end)
+    end
+    function camera:setSeat(seat)
+        self.seat = seat
+    end
+    function camera:onEnter()
+    end
+    function camera:onLeave()
+    end
+    
+else
+    function camera:initialize(body)
+        self.body = body
+        self.offset = CAMERA_OFFSET
+        self.matrix = Matrix()
+        self.dist = 0
+        self.forward = self.body:getForward()
+        self.eye = self.forward
+        self.zoom = 1
+    end
+    function camera:start()
+        self.zoom = 1
+        self.forward = self.body:getForward()     
+        self.yaw = math.deg(math.atan2(self.forward[2], self.forward[1]))
+        self.pitch = math.deg(math.asin(self.forward[3]/math.sqrt(self.forward[2]^2 + self.forward[1]^2)))
+
+        hook.add("mousemoved","camera",function(x,y)
+            local scale = timer.frametime()
+            self.yaw = (self.yaw - x*scale/self.zoom) % 360
+            self.pitch = math.clamp(self.pitch + y*scale/self.zoom, -45, 45)
+            self.forward = Angle(self.pitch, self.yaw, 0):getForward()
+            net.start("eye") net.writeVector(self.forward) net.send(nil, true)
+        end)
+        hook.add("mouseWheeled","camera",function(v)
+            self.dist = math.clamp(self.dist - v*9,-50,500)
+        end)
+        hook.add("inputpressed","camera",function(v)    
+            if v == KEY.SHIFT then
+                self.zoom = self.zoom + 3
+                self.zoom = (self.zoom%12)+1
+                GLOBAL_ZOOM = self.zoom
+            end
+            //local AS = (v == KEY.W and 1 or 0) - (v == KEY.S and 1 or 0)
+            //local AD = (v == KEY.A and 1 or 0) - (v == KEY.D and 1 or 0)
+            //CAMERA_OFFSETWALK = CAMERA_OFFSETWALK + Vector(WS,AD):getRotated(self.matrix)
+        end)
+        hook.add("calcview","camera",function(tbl)
+            local up = self.body:getUp()
+            up = (up - self.forward*self.forward:dot(up)):getNormalized()
+            local right = (self.forward):cross(up)
+            self.matrix:setForward(self.forward)
+            //self.matrix:setRight(right)
+            //self.matrix:setUp(up)
+            self.pos = self.body:localToWorld(self.offset) - self.matrix:getForward()*self.dist
+            GLOBAL_EYEPOS = self.pos
+            return {
+                origin = self.pos,
+                angles = self.matrix:getAngles(),
+                fov = 90 / self.zoom,
+            }
+        end)
+    end
+    
+    function camera:stop()
+        hook.remove("mousemoved","camera")
+        hook.remove("mouseWheeled","camera")
+        hook.remove("inputpressed","camera")
+        hook.remove("calcview","camera")
+    end
+    net.start("initCAMERA") net.send()
+    net.receive("initCAMERA",function()
+        local mycamera = camera:new(net.readEntity())
+        hook.add("hudconnected","camera",function() mycamera:start() end)
+        hook.add("huddisconnected","camera",function() mycamera:stop() end)
+    end)
+
+end
+
+function EYEPOS()
+    return GLOBAL_EYEPOS or Vector()
+end
+
+function GETZOOM()
+    return GLOBAL_ZOOM or 1
+end
+
+return camera
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

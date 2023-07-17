@@ -1,0 +1,156 @@
+--@name valeras/libs/secondOrderDynamics
+--@author valera 41 // kekobka // STEAM_0:0:186583728
+--@shared
+
+-- смешно дергает письки
+
+--[[
+
+            ██╗░░██╗███████╗██╗░░██╗░█████╗░██████╗░██╗░░██╗░█████╗░
+            ██║░██╔╝██╔════╝██║░██╔╝██╔══██╗██╔══██╗██║░██╔╝██╔══██╗
+            █████═╝░█████╗░░█████═╝░██║░░██║██████╦╝█████═╝░███████║
+            ██╔═██╗░██╔══╝░░██╔═██╗░██║░░██║██╔══██╗██╔═██╗░██╔══██║
+            ██║░╚██╗███████╗██║░╚██╗╚█████╔╝██████╦╝██║░╚██╗██║░░██║
+            ╚═╝░░╚═╝╚══════╝╚═╝░░╚═╝░╚════╝░╚═════╝░╚═╝░░╚═╝╚═╝░░╚═╝
+
+ ]]--
+
+    
+local SOD = class("SOD")
+
+local secondOrderDynamics = class("secondOrderDynamics")
+
+function secondOrderDynamics:initialize(f,z,r,x0,start)
+    local xp, xd = Vector() // previous input
+    local y, yd = Vector(),Vector() // state
+    local _w, _z, _d, k1, k2, k3 // constants
+    _w = 2 * math.pi * f
+    _z = z
+    _d = _w * math.sqrt(math.abs(z*z-1))
+    k1 = z /(math.pi * f)
+    k2 = 1 / (_w * _w)
+    k3 = r * z / _w
+    //init var
+    local xp = x0
+    local y = x0
+    local yd = 0
+    local T = game.getTickInterval()
+    
+    function self:update(x)
+        
+        if not xd then
+            xd = (x - xp) / T
+            xp = x
+        end
+        
+        local k1_stable,k2_stable
+        
+        if _w * T < _z then
+            k1_stable = k1
+            k2_stable = math.max(k2, T*T/2 + T*k1/2,T*k1)
+        else
+            local t1 = math.exp(-_z * _w * T)
+            local alpha = 2 * t1 * ( _z <= 1 and math.cos(T*_d) or math.cosh(T*_d) )
+            local beta = t1 * t1
+            local t2 = T / (1 + beta - alpha)
+            k1_stable = (1-beta) * t2
+            k2_stable = T * t2
+        end
+        y = y + T * yd
+        yd = yd + T * (x + k3*xd - y - k1*yd) / k2_stable
+        return y
+        
+    end
+end
+
+function SOD:initialize(f,z,r,x0)
+    
+    local X = secondOrderDynamics:new(f,z,r,x0.x)
+    local Y = secondOrderDynamics:new(f,z,r,x0.y)
+    local Z = secondOrderDynamics:new(f,z,r,x0.z)
+    
+    function self:update(pos)
+        local x = X:update(pos.x)
+        local y = Y:update(pos.y)
+        local z = Z:update(pos.z)
+        return Vector(x,y,z)
+    end
+    
+end
+
+
+
+/*
+--include ./ismain.txt
+local ISMAIN = dofile("./ismain.txt")
+
+if SERVER and ISMAIN then
+        
+    local demo = class("demo")
+    
+    local f = 10
+    local z = 0.7
+    local r = 30
+    local startpos = chip():getPos()
+    local count = 100
+    
+    local holos = {}
+    local demos = {}
+    function demo:initialize(startpos)
+    
+        local holo = hologram.create(startpos,chip():getAngles(),"models/holograms/cube.mdl",Vector(1))
+        local demo = SOD:new(f,z,r,startpos)
+        table.insert(holos,holo)
+        table.insert(demos,demo)
+        
+    end
+    
+    for _ = 1,count do 
+        demo:new(startpos)
+        startpos = startpos + Vector(0,0,12)
+    end
+    
+    hook.add("think","",function()
+        pos = chip():getPos()
+        for ind = 1,count do
+            local holo = holos[ind]
+            local demo = demos[ind]
+            local pos2 = demo:update(pos)
+            holo:setPos(pos)
+            pos = pos2 + Vector(0,0,12)
+        end
+        
+    end)
+
+end
+
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

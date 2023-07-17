@@ -1,0 +1,82 @@
+--@name valeras/libs/chatcommands
+--no examples? :(
+local ChatCommand = {
+        commands = {}
+    }  
+local hookName = SERVER and "PlayerSay" or "PlayerChat"
+
+hook.add(hookName,table.address(ChatCommand),function(ply, text, teamChat)
+
+    local args = string.split(text," ")
+    local command = table.remove( args, 1 )
+    local lcom = command:lower()
+    
+    if ChatCommand.commands[lcom] then
+        local c = ChatCommand.commands[lcom]
+        local extra = c.extra
+        if extra.caseSensitive and lcom ~= command then
+            return
+        end
+        if extra.owneronly and owner() ~= ply then
+            return 
+        end
+        if extra.teamonly and teamChat then
+            return 
+        end
+        
+        local r
+        
+        if c.f and not ((extra.clientonly and SERVER) or (extra.serveronly and CLIENT)) then
+            r = c.f(unpack(args))
+        else
+            if SERVER then
+                net.start("ChatCommand_invisible")
+                net.writeString(text)
+                net.writeBool(teamChat)
+                net.send()
+            end
+        end
+        return extra.invisible and "" or r
+    end
+    
+end)
+
+function ChatCommand:on(name,f,extra)
+
+    self.commands[name].name = name
+    self.commands[name].f = f
+    self.commands[name].extra = extra
+    if extra.invisible and CLIENT then
+        net.start("ChatCommand_invisible")
+        net.writeString(name)
+        net.writeTable(extra or {})
+        net.send()
+    end
+end
+if SERVER then
+    net.receive("ChatCommand_invisible",function()
+        local name = net.readString()
+        local extra = net.readTable()
+        if not ChatCommand.commands[name] then
+                ChatCommand.commands[name].name = name
+                ChatCommand.commands[name].f = f
+                ChatCommand.commands[name].extra = extra
+        end
+    end)
+else
+    net.receive("ChatCommand_invisible",function()
+        local name = net.readString()
+        local teamChat = net.readBool()
+        hook.run(hookName, owner(), name, teamChat)
+    end)
+end
+function ChatCommand:emulate(msg, ply, team)
+    hook.run(hookName, ply, msg, team)
+end
+
+
+return ChatCommand
+
+
+
+

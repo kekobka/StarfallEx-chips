@@ -1,0 +1,95 @@
+-- если суперюзер то крашит намертво гмод варнинг
+
+local function canProcess() 
+    return math.max(cpuTotalAverage(), cpuTotalUsed()) < cpuMax() * 0.9
+end
+
+
+function hook.addTurbo(hookName,name,fn)
+    local speed = 2
+    local brk = {}
+    hook.add(hookName,name,function()
+        for _=0, speed do
+            
+            if not canProcess() then speed = math.max(speed - 1,1) break end
+            fn(speed,brk)
+            speed = speed ^ 2
+            if brk.brk then break end
+        end
+    end)
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

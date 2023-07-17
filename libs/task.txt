@@ -1,0 +1,172 @@
+-- втф чо асинхронность в гмоде 
+-- ОСТОРОЖНО ОНО ЛОМАЕТ http.get И bass.loadURL функции превращая их в асинхронные
+
+local Task = class("Task")
+
+local function canProcess()
+    return math.max(cpuTotalAverage(), cpuTotalUsed()/4) < cpuMax() * 0.7
+end
+local tasks = {}
+local While = false
+local function WORK()
+    for Key, work in ipairs(tasks) do
+        if work(Key) then
+            table.remove(tasks, Key)
+        end
+    end
+end
+local function RUNTASK()
+    if While then
+        local curtime = timer.systime()
+        while timer.systime() - curtime < 0.025 and canProcess() do
+            WORK()
+        end
+    else
+        WORK()
+    end
+
+    if #tasks < 1 then
+        hook.remove("think", table.address(Task))
+    end
+end
+
+
+function Task:initialize(func, hk)
+    self.func = func
+    self.ret = {}
+    self.solved = false
+    self.thread = coroutine.wrap(function(Key)
+                    self.ret = {self.func()}
+                    self.solved = true
+                    if self.thenfn then 
+                            self.thenfn(unpack(self.ret))
+                    end
+                    return true
+                end)
+    table.insert(tasks, self.thread)
+    hook.add("think", table.address(Task), RUNTASK)
+end
+
+
+function Task.run(func, hk)
+    return Task:new(func, hk)
+end
+function Task.all(tasks)
+    for _,task in pairs(tasks) do
+        while not task.solved do
+            coroutine.yield()
+        end
+    end
+    local ret = {}
+    for _,task in pairs(tasks) do
+        table.insert(ret,task.ret)
+    end
+    return unpack(ret)
+end
+
+function Task.sleep(ms)
+    coroutine.wait(ms/1000)
+end
+
+function Task.yield()
+    coroutine.yield()
+end
+
+function Task:th(fn)
+    self.thenfn = fn
+end
+function Task.While(bool)
+    While = bool
+end
+
+
+
+function Task:await()
+    while not self.solved do
+        coroutine.yield()
+    end
+    return unpack(self.ret)
+end
+function Task:kill()
+    table.removeByValue(tasks, self.thread)
+    table.empty(self)
+    self = nil
+end
+
+Task.wait = Task.await
+
+await = setmetatable({},{
+    __mul = function(_,task)
+        assert(istable(task) and task:isInstanceOf(Task), "await for Task only")
+        return task:await()
+    end})
+    
+async = setmetatable({},{
+    __mul = function(_,fn)
+        assert(isfunction(fn), "is not function")
+
+        return function(...)
+            local args = {...}
+
+            return Task.run(function()
+                return fn(unpack(args))
+            end)
+        end
+    end})
+    
+local http_ = table.copy(http)
+
+http.get = async* function(url, headers)
+
+    local ret
+    http_.get(url, function(...) ret = {...} end, function(...) ret = {...} end, headers)
+    while not ret do
+        Task.yield()
+    end
+    return unpack(ret)
+end
+
+http.post = async* function(url, payload, headers)
+
+    local ret
+    http_.post(url, payload, function(...) ret = {...} end, function(...) ret = {...} end, headers)
+    while not ret do
+        Task.yield()
+    end
+    return unpack(ret)
+end
+
+
+    
+if CLIENT then
+    
+    local bass_ = table.copy(bass)
+
+    bass.loadURL = async* function(path, flags)
+    
+        local ret
+        
+        bass_.loadURL(path, flags, function(...) ret = {...} end)
+            
+        while not ret do
+            Task.yield()
+        end
+        return unpack(ret)
+    end
+
+end
+
+return Task
+
+
+
+
+
+
+
+
+
+
+
+
+

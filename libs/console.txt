@@ -1,0 +1,270 @@
+--@name valeras/libs/console
+--@author discord.gg/6Q5NnHQTrh // kekobka // STEAM_0:0:186583728
+--@shared
+
+--[[
+
+            ██╗░░██╗███████╗██╗░░██╗░█████╗░██████╗░██╗░░██╗░█████╗░
+            ██║░██╔╝██╔════╝██║░██╔╝██╔══██╗██╔══██╗██║░██╔╝██╔══██╗
+            █████═╝░█████╗░░█████═╝░██║░░██║██████╦╝█████═╝░███████║
+            ██╔═██╗░██╔══╝░░██╔═██╗░██║░░██║██╔══██╗██╔═██╗░██╔══██║
+            ██║░╚██╗███████╗██║░╚██╗╚█████╔╝██████╦╝██║░╚██╗██║░░██║
+            ╚═╝░░╚═╝╚══════╝╚═╝░░╚═╝░╚════╝░╚═════╝░╚═╝░░╚═╝╚═╝░░╚═╝
+
+]]--
+
+-- используется в моей операционке
+
+local net_start = net.start
+local net_send = net.send
+local net_receive = net.receive
+local net_writeTable = net.writeTable
+local net_readTable = net.readTable
+local http_get = http.get
+local http_post = http.post
+console = {}
+console.data = {}
+console.txt = ""
+console.height = 0
+function console.log(...)
+    
+    local args = {...}
+    if SERVER then
+        net_start("console.log")
+        net_writeTable(args)
+        net_send(nil,false)
+    else
+        
+        table.insert(console.data,args)
+        console.lastlog = args
+    end
+end
+
+function net.start(name)
+    console.log("[LOGNET] "..name)
+    net_start(name)
+end
+function http.get(...)
+    local args = {...}
+    console.log("[HTTPLOG] ",Color(255,255,0),args[1])
+    http_get(...)
+end
+function http.post(...)
+    local args = {...}
+    console.log("[HTTPLOG POST] ",Color(255,255,0),args[1])
+    http_post(...)
+end
+if SERVER then
+    
+    hook.add("PlayerSay",table.address(console),function( ply, text, private )
+        if private then
+            console.log(team.getColor(ply:getTeam()),"["..ply:getTeamName().."] ",Color(255,255,255,255), string.format( "(TEAM) %s: %s", ply:getName(), text ) )
+        else
+            console.log(team.getColor(ply:getTeam()),"["..ply:getTeamName().."] ",Color(255,255,255,255), string.format( "%s: %s", ply:getName(), text ) )
+        end
+    end)
+    hook.add("OnEntityCreated",table.address(console),function(ent)
+        timer.simple(0,function()
+            
+            if not ent:isValid() or not ent:getOwner() then return end
+            
+            local owner = ent:getOwner()
+            console.log(string.format("%s<%s> spawned model %s",owner:getName(),owner:getSteamID(),ent:getModel() or "?"))
+        end)
+    end)
+    hook.add("ClientInitialized",table.address(console),function(ply)
+
+        local owner = ply
+        console.log(string.format("%s<%s> loaded starfall",owner:getName(),owner:getSteamID()))
+
+    end)
+
+else
+    local bassloadurl = bass.loadURL
+    
+    
+    function bass.loadURL(...)
+        local a = {...}
+        console.log("[BASS] ",Color(255,255,0), a[1])
+        bassloadurl(...)
+    end
+    net_receive("console.log",function()
+        local a = net_readTable()
+        console.log(Color(150,150,255),unpack(a))
+    end)
+    hook.add("net",table.address(console),function( name,  len)
+        console.log("[LOGNET] "..name.." : " .. len)
+    end)
+    render.createRenderTarget(table.address(console))
+    console.rendertarget = table.address(console)
+    function console.render()
+        if console.lastlog ~= console.lastlogTemp then
+            hook.add("renderoffscreen",table.address(console),function()
+                local y = 1024
+                render.selectRenderTarget(table.address(console))
+                render.clear(Color(0,0,0,0),true)
+                render.setFont(render.getDefaultFont())
+                for _, line in ipairs(console.data) do
+                    render.setColor(Color(255,255,255,255))
+                    local x = 0
+                    local linew = 0
+                    local lineh = 16
+                    console.line = table.copy(line)
+                    for id, data in ipairs(console.line) do
+                        
+                        if type(data) == "Color" then
+                            render.setColor(data)
+                        else
+                            local w,h = render.getTextSize(tostring(data))
+                            if x + linew + w >= 1024 then
+                                local newline = ""
+                                local toaddline = ""
+                                for n,c in string.utf8codes(tostring(data)) do
+                                    local char = string.utf8char(c)
+                                    local w, h = render.getTextSize( newline .. char )
+                                    
+                                    if x + w >= 1024 then
+                                        toaddline = toaddline .. char
+                                    else
+                                        newline = newline .. char
+                                    end
+                                end
+                                render.drawSimpleText(x,1024-y, newline, 0, 0)
+                                x = 0
+                                y = y - 16
+                                lineh = lineh + 16
+                                linew = 0
+                                
+                                table.insert(console.line,id+1,toaddline)
+                                continue
+                            end
+                            render.drawSimpleText(x,1024-y, data, 0, 0)
+                            linew = linew + w
+                            x = x + w
+                        end
+                    end
+                    render.setColor(Color(255,255,255,150))
+                    
+                    y = y - 16
+                    render.drawLine(0, 1024 - y - lineh, 1024, 1024 - y - lineh)
+                    line.height = lineh
+                    console.height = 1024-y
+                end
+                render.selectRenderTarget()
+                hook.remove("renderoffscreen",table.address(console))
+            end)
+
+            while console.height >= 1024 do
+                local line = table.remove(console.data,1)
+                console.height = console.height - (line and line.height or 16)
+            end
+
+        end
+            console.lastlogTemp = console.lastlog
+        return console.rendertarget, console.height
+    end
+    
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--[[
+
+
+--@include valeras/libs/multiscreen.txt
+require("valeras/libs/multiscreen.txt")(false)
+
+--@include valeras/libs/console.txt
+require("valeras/libs/console.txt")
+
+
+if SERVER then
+
+    
+else
+
+    hook.add("render:1","",function() 
+        local texture, height = console.render()
+        render.setRenderTargetTexture( texture )
+        render.setColor(Color(255,255,255,255))
+        render.drawTexturedRect(0,0,512,512)
+    end)
+end
+]]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,75 @@
+-- мне лень развивать эту либу делайте пул реквесты пж
+
+local vkapi = class("vkapi")
+vkapi.Version = 1
+
+function vkapi:initialize(token, count) 
+    self.token = token
+    self.count = count or 20
+    self.lastPay = nil
+    self.max = nil
+    function self:httpget(func,pay)
+        local MusicData = {}
+        self.lastPay = pay and pay or self.lastPay
+        local headers = {['User-Agent'] = 'KateMobileAndroid/56 lite-460 (Android 4.4.2; SDK 19;x86; unknown Android SDK built for x86; en)'}
+        local payload = {
+            v = "5.131",
+            q = self.lastPay,
+            offset = tostring(self:getOffset()),
+            auto_complete = "1",
+            genre_id = "3",
+            count = tostring(self.count),
+            access_token = self.token
+            }
+        http.post("https://api.vk.com/method/"..self:getMethod(),payload,
+        function(toJ)
+            local TABLE = json.decode(toJ)
+            if not TABLE.response then return end
+            local items = TABLE.response.items or TABLE.response 
+            self.max = TABLE.response.count
+            for id = 1 ,self.count do
+                if not items[id] then continue end
+                MusicData[id] = {}
+                MusicData[id].name = items[id].artist.." - "..items[id].title
+                MusicData[id].url = items[id].url
+                if not items[id].album then MusicData[id].cover = "" continue end
+                if not items[id].album.thumb then MusicData[id].cover = "" continue end
+                MusicData[id].cover = items[id].album.thumb.photo_1200
+            end
+            
+            func(MusicData)
+            
+        end,function(err) print(err) end,headers)
+        return MusicData
+    end
+    return self
+end
+
+function vkapi:runMethod(func,pay) 
+    if not http.canRequest() then return end
+    self:httpget(func,pay)
+end
+
+function vkapi:getMethod() return self._method end
+function vkapi:setMethod(pay) 
+    self._method = pay
+    self:setOffset(0)
+end
+
+function vkapi:getOffset() return self._offset end
+function vkapi:setOffset(pay) self._offset = pay end
+
+function vkapi:nextPage(func) 
+    if not http.canRequest() then return end
+    self:setOffset(math.clamp(self:getOffset() + self.count,0,self.max))
+    self:httpget(func)
+end
+
+function vkapi:prevPage(func) 
+    if not http.canRequest() then return end
+    self:setOffset(math.clamp(self:getOffset() - self.count,0,self.max))
+    self:httpget(func)
+end
+
+return vkapi
+

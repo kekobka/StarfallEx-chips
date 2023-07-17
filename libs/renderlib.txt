@@ -1,0 +1,204 @@
+--@name libs/renderlib
+--@author valera 41 // kekobka // STEAM_0:0:186583728
+--@client
+
+--[[
+
+            ██╗░░██╗███████╗██╗░░██╗░█████╗░██████╗░██╗░░██╗░█████╗░
+            ██║░██╔╝██╔════╝██║░██╔╝██╔══██╗██╔══██╗██║░██╔╝██╔══██╗
+            █████═╝░█████╗░░█████═╝░██║░░██║██████╦╝█████═╝░███████║
+            ██╔═██╗░██╔══╝░░██╔═██╗░██║░░██║██╔══██╗██╔═██╗░██╔══██║
+            ██║░╚██╗███████╗██║░╚██╗╚█████╔╝██████╦╝██║░╚██╗██║░░██║
+            ╚═╝░░╚═╝╚══════╝╚═╝░░╚═╝░╚════╝░╚═════╝░╚═╝░░╚═╝╚═╝░░╚═╝
+
+]]--
+
+
+-- раньше я много рендерил и она мне казалась полезной
+
+/* EXAMPLE
+--include libs/renderlib.txt
+renderlib = require "libs/renderlib.txt"
+local res = 512
+Render = renderLib(Vector(res,res),0.5)
+
+Render:addClear(Color(0,0,0,255),true)
+
+Render:addfunc(function(x,y)
+    render.drawRectFast(x *1024/res,y*1024/res,1024/res,1024/res)    
+end)
+
+Render:startRender()
+*/
+
+local renderLib = class("renderlib")
+
+
+function renderLib:initialize(res,perf) 
+    self.chipname = chip():getChipName()
+    self.renderorder = {}
+    self.resolution = res
+    self.perf = perf
+    self.speed = 1
+    self.render = table.copy(render)
+    self.name = table.address(self)
+    render.createRenderTarget(self.name)
+
+    return self.render
+end
+
+local function canProcess(perf)
+    return math.max(cpuTotalAverage(), cpuTotalUsed()/4) < cpuMax() * (perf or 0.9)
+end
+function renderLib:addfunc(Func,loop)
+    local ind = 0
+    local res = self.resolution
+    local perf = self.perf
+
+    local funct = function()
+        for I = 0, self.speed do
+            if canProcess(perf) then
+                local x, y = ind % res.x, math.floor(ind / res.y)
+                Func(x,y)
+                ind = ind + 1
+                if ind-1 >= res.x*res.y then ind = 0 if not loop then return true end return end
+                self.speed = self.speed + 1
+            else
+                self.speed = math.max(self.speed-1,1)
+            end
+        end
+        return (ind+1)/(res.x*res.y)
+    end
+    table.forceInsert(self.renderorder,{func = funct, args = {}})
+    //return funct
+end
+
+function renderLib:addRect(...)
+    table.forceInsert(self.renderorder,{func = function(...) self.render.drawRectFast(...) return true end , args = {...}})
+end
+function renderLib:setColorSlow(...)
+    table.forceInsert(self.renderorder,{func = function(...) self.render.setColor(...) return true end , args = {...}})
+end
+function renderLib:addClear(...)
+    table.forceInsert(self.renderorder,{func = function(...) self.render.clear(...) return true end , args = {...}})
+end
+
+function renderLib:updateStatus()
+    local name = self.chipname.." ]\n\n"
+    local name = name .. "renderLib info\n"
+    local name = name .. "[ Resolution: "..self.resolution.x.." "..self.resolution.y.." ]\n"
+    local name = name .. "[ CPU: "..( ( cpuTotalAverage()/cpuMax()) * 100).."% ]\n"
+    local name = name .. "[ RAM: "..tostring(math.modf(ramUsed()/1024)).." ]\n"
+    local name = name .. "[ Speed: "..self.speed.." ]\n"
+    local ord = #self.renderorder == 0 and self.fullorder or (math.abs(#self.renderorder - self.fullorder))
+    local name = name .. "[ Render order: "..ord.."/"..self.fullorder.." ]\n"
+    local name = name .. "[ Rendering: "..tostring(math.round((progress and progress ~= true and progress or 1)*100,2)).."% ]\n"
+    local name = name .. "[ Time: "..string.toHoursMinutesSecondsMilliseconds(timer.realtime() - self.timerstart)
+    setName(name)
+end
+
+function renderLib:startRender()
+    print("START")
+    self.timerstart = timer.realtime()
+    self.fullorder = #self.renderorder
+    hook.add("renderoffscreen",self.name,function()
+        self.render.selectRenderTarget(self.name)
+        self:updateStatus()
+        if canProcess(0.9) then
+            local order = self.renderorder[1] //table.remove(self.renderorder,1)
+            progress = order.func(unpack(order.args))
+            
+            if progress == true then table.remove(self.renderorder,1) end
+            
+            if #self.renderorder == 0 then
+                hook.remove("renderoffscreen",self.name)
+                self:updateStatus()
+                print("FINISH")
+                print(string.niceTime(timer.realtime() - self.timerstart))
+            end
+        end
+        self.render.selectRenderTarget(nil)
+    end)
+    
+    hook.add("render",self.name,function()
+        self.render.setFilterMin(1)
+        self.render.setFilterMag(1)
+        self.render.setRenderTargetTexture(self.name)
+        self.render.setColor(Color(255,255,255,255))
+        self.render.drawTexturedRect(0,0,512,512)
+    end)
+end
+
+
+
+
+
+return renderLib
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

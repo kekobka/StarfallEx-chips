@@ -1,0 +1,103 @@
+--@name valeras/libs/perms
+--@author discord.gg/6Q5NnHQTrh // kekobka // STEAM_0:0:186583728
+--@shared
+
+-- юзается в либе MeshBuilder 
+
+local PERMA = class("PERMA")
+
+function PERMA:initialize()
+    self.perms = {}
+    self.satisfied = false
+end
+function PERMA:check(perm, obj)
+    local has = hasPermission(perm, obj)
+    if not has then
+        table.insert(self.perms,perm)
+    end
+    return self
+end
+function PERMA:setup()
+    if #self.perms > 0 then
+        setupPermissionRequest( self.perms, "AUTO GENERATED", true)
+        hook.add("permissionrequest",table.address(self),function()
+            if permissionRequestSatisfied() then
+                self.satisfied = true
+                self:onSatisfied()
+            end
+        end)
+    else
+        self.satisfied = true
+        self:onSatisfied()
+    end
+end
+
+-- STUB
+function PERMA:onSatisfied()
+end
+
+return PERMA
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,230 @@
+--@name valeras/libs/rtxray
+--@author valera 41 // kekobka // STEAM_0:0:186583728
+--@shared
+
+-- лучше бы я не рендерил вообще это полный мусор
+
+--[[
+
+            ██╗░░██╗███████╗██╗░░██╗░█████╗░██████╗░██╗░░██╗░█████╗░
+            ██║░██╔╝██╔════╝██║░██╔╝██╔══██╗██╔══██╗██║░██╔╝██╔══██╗
+            █████═╝░█████╗░░█████═╝░██║░░██║██████╦╝█████═╝░███████║
+            ██╔═██╗░██╔══╝░░██╔═██╗░██║░░██║██╔══██╗██╔═██╗░██╔══██║
+            ██║░╚██╗███████╗██║░╚██╗╚█████╔╝██████╦╝██║░╚██╗██║░░██║
+            ╚═╝░░╚═╝╚══════╝╚═╝░░╚═╝░╚════╝░╚═════╝░╚═╝░░╚═╝╚═╝░░╚═╝
+
+]]--
+--@include valeras/libs/intersect.txt
+local intersect = require "valeras/libs/intersect.txt"
+
+
+local Rayrtx = class("rtx")
+
+math.reflect = function(vector, normal)
+    return (vector - 2 * (normal:dot(vector) * normal))
+end
+math.clampcolor = function(color, colormin, colormax)
+    return Color(
+        math.clamp(color.r, colormin.r, colormax.r),
+        math.clamp(color.g, colormin.g, colormax.g),
+        math.clamp(color.b, colormin.b, colormax.b),
+        255
+    ) 
+end
+
+function Rayrtx:initialize(scene,pos,dir)
+    
+    self.obj = scene.objects
+    self.lights = scene.lights
+    
+    self.pos = pos and pos or Vector(-42, 0, 24)
+    self.camdir = dir and dir or Vector(1, 0, -0.5)
+    
+    self.dir = Vector()
+    
+    self.data = {}
+    
+    function self:ray(origin,dir)
+        
+        local data = {}
+        data.distance = math.huge
+        data.dir = dir
+        
+        for i, obj in ipairs(self.obj) do
+            if obj.type == "sphere" then
+                Hit, norm = intersect.LVSS({pos = origin,dir = dir},obj)
+            end
+            if obj.type == "plane" then
+                Hit, norm = intersect.LVSP({pos = origin,dir = dir},obj)//trace.intersectRayWithOBB(origin, dir * 65536, obj.pos, obj.ang, -obj.size / 2, obj.size / 2)
+            end
+            if obj.type == "cube" then
+                Hit, norm = trace.intersectRayWithOBB(origin, dir * 65536, obj.pos, obj.ang, -obj.size / 2, obj.size / 2)
+            end
+            
+            if Hit then 
+                local dist = origin:getDistanceSqr(Hit)
+                if dist < data.distance then
+                    data.distance = dist
+                    data.hitpos = Hit
+                    data.object = obj
+                    data.hitnormal = norm
+                end
+            end
+        end
+        
+        return data
+    end
+    function self:combined(tbl)
+        local r,g,b,a = 0,0,0,0
+        for _, item in pairs(tbl) do
+            r = r + (item.r or 255)
+            g = g + (item.g or 255)
+            b = b + (item.b or 255)
+            a = a + (item.a or 255)
+        end
+        return Color(r/#tbl,g/#tbl,b/#tbl,a/#tbl)
+    end
+    
+    function self:calcLights(ray)
+        local color = {Color(0,0,0,0)}
+        for _, light in pairs(self.lights) do
+            local colorr = Color()
+            local li = nil
+            local light_distance = light.mat
+            local bright = light.size
+            local type = light.type
+
+            if type == "lamp" then
+                
+            elseif type == "light" then
+                li = self:ray(light.pos,(ray.hitpos - light.pos):getNormalized())
+            end
+            
+            local light_frac = (light.pos - ray.hitpos):getLength() / light_distance
+            light_frac = math.clamp(light_frac,0,1)
+
+            if (ray.hitpos - li.hitpos):getLength() < 1 then
+                color_ = light.color * bright
+
+                colorr.r = color_.r * (1 - light_frac)
+                colorr.g = color_.g * (1 - light_frac)
+                colorr.b = color_.b * (1 - light_frac)
+                table.insert(color,colorr)
+            else
+                if light_frac <= 0 then
+                end
+            end
+        end
+        return self:combined(color)
+    end
+    function self:reflect(ray,dir)
+        local reflection_dir = (dir - 2 * ray.hitnormal * dir:dot(ray.hitnormal)):getNormalized()
+        return self:ray(ray.hitpos + ray.hitnormal,reflection_dir)
+    end
+    function self:sunreflect(ray,sun,power)
+            local sunrefl = 0
+            local sunreflray = self:ray(ray.hitpos + ray.hitnormal, math.reflect(ray.dir, ray.hitnormal))
+                
+            if not sunreflray.hitpos then
+                sunrefl = (sunreflray.dir:dot(sun) ^ (64/power)) * 255
+            end
+        return Color(sunrefl, sunrefl, sunrefl, 255)
+    end
+    function self:calcIntersect(res,zoom,x,y) 
+        self.dir = (Vector(res*zoom, res / 2 - (x / 1024 * res), res / 2 - (y / 1024 * res))):getRotated(self.camdir:getAngle()):getNormalized()
+        local data = {}
+        return self:ray(self.pos,self.dir)
+    end
+    function self:calcChessColor(pos,size) 
+            if math.round(math.round(pos.x / size) * size) % (size * 2) == size then
+                color = Color(65, 65, 65)
+                if math.round(math.round(pos.y / size) * size) % (size * 2) ~= size then
+                    color = Color(200, 155, 115)
+                end
+            else
+                color = Color(200, 155, 115)
+                if math.round(math.round(pos.y / size) * size) % (size * 2) ~= size then
+                    color = Color(65, 65, 65)
+                end
+            end
+        return color
+    end
+end
+
+
+return Rayrtx
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

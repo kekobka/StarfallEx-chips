@@ -1,0 +1,108 @@
+--@name valeras/
+--@author valera 41 // kekobka // STEAM_0:0:186583728
+--@shared
+
+--я это спиздил откуда-то непомню уже
+
+local array = {}
+
+local floor = math.floor
+
+function array.translate1Dto2D(ind, w)
+    return ind % w, floor(ind / w)
+end
+
+function array.translate2Dto1D(x, y, w)
+    return x + y * w
+end
+
+function array.transform1Dto3D(ind, w, h)
+    return ind % w, floor(ind / w % h), floor(ind / w / h)
+end
+
+function array.transform3Dto1D(x, y, z, w, h)
+    return x + y * w + z * w * h
+end
+
+return array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

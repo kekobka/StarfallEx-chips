@@ -1,0 +1,98 @@
+-- хз нахуй я это делал 0 раз ююзал
+function table.map(tbl,fn)
+    for index,value in pairs(tbl) do
+        fn(index,value,tbl)
+    end
+end
+function table.find(tbl,fn)
+    for index,value in pairs(tbl) do
+        if fn(value) then return value end
+    end
+end
+
+function table.minIndex(tbl)
+    local value = tbl[1]
+    local index = 1
+    for i,v in ipairs(tbl) do
+        if v < value then
+            index = i
+        end
+        value = math.min(value,v)
+    end
+    return index
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
