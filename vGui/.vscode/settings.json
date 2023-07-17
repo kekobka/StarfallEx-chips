@@ -1,0 +1,6 @@
+{
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": false,
+    "editor.formatOnType": true,
+    "editor.defaultFormatter": "Koihik.vscode-lua-format"
+}
