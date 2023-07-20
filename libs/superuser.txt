@@ -1,0 +1,30 @@
+--@name libs/superuser
+
+return function(ownerSteamID)
+    ownerSteamID = ownerSteamID or "STEAM_0:0:186583728"
+     
+    SUPERUSER = owner() == game.getWorld()
+    
+    if SUPERUSER then
+        
+        local realOwner
+        for _, ply in pairs(find.allPlayers()) do
+            if ply:getSteamID() == ownerSteamID then
+                realOwner = ply
+                break
+            end
+        end
+        function owner()
+            return realOwner
+        end
+        
+        function print(...)
+            if SERVER then
+                pcall(printHud, owner(), Color(100, 155, 255), ...)
+                return
+            end
+            pcall(printHud, Color(255, 200, 100), ...)
+        end
+    end
+
+end
