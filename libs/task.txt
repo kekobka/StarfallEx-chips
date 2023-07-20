@@ -18,7 +18,7 @@ end
 local function RUNTASK()
     if While then
         local curtime = timer.systime()
-        while timer.systime() - curtime < 0.025 and canProcess() do
+        while timer.systime() - curtime < 1/60 and canProcess() do
             WORK()
         end
     else
@@ -59,7 +59,7 @@ function Task.all(tasks)
     end
     local ret = {}
     for _,task in pairs(tasks) do
-        table.insert(ret,task.ret)
+        table.insert(ret, task.ret)
     end
     return unpack(ret)
 end
@@ -76,7 +76,9 @@ function Task:th(fn)
     self.thenfn = fn
 end
 function Task.While(bool)
+    local temp = While
     While = bool
+    return temp
 end
 
 
@@ -99,8 +101,11 @@ await = setmetatable({},{
     __mul = function(_,task)
         assert(istable(task) and task:isInstanceOf(Task), "await for Task only")
         return task:await()
+    end,
+    __tostring = function()
+        return "await function"
     end})
-    
+
 async = setmetatable({},{
     __mul = function(_,fn)
         assert(isfunction(fn), "is not function")
@@ -112,6 +117,9 @@ async = setmetatable({},{
                 return fn(unpack(args))
             end)
         end
+    end,
+    __tostring = function()
+        return "async function"
     end})
     
 local http_ = table.copy(http)
