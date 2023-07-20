@@ -327,6 +327,7 @@ function Parser:initialize(t)
     end
 
     local function functionDefine()
+        VariablesStackPush()
         local name = consume(TOKENTYPES.WORD).text
         consume(TOKENTYPES.LBRACKET)
         local argTypes = {}
@@ -338,8 +339,9 @@ function Parser:initialize(t)
             match(TOKENTYPES.COMMA)
         end
         local body = stateOrBlock()
-        
-        return FunctionDefineStatement(name, argTypes, argNames, body)
+        local res = FunctionDefineStatement(name, argTypes, argNames, body)
+        VariablesStackPop()
+        return res
     end
 
     function self:block()

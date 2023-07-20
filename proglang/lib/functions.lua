@@ -1,20 +1,27 @@
 --@name FUNCTIONS
 local InternalFunction = class("InternalFunction")
-function InternalFunction:initialize(body)
+function InternalFunction:initialize(body, wait)
     self.body = body
+    self.wait = wait
 end
 function InternalFunction:execute(...)
-    self.body(...)
+    return self.body(...)
+end
+local stack = {}
+
+function FUNCTIONSStackPush()
+    table.insert(stack, table.copy(FUNCTIONS))
+end
+
+function FUNCTIONSStackPop()
+    FUNCTIONS = table.remove(stack)
 end
 
 FUNCTIONS = {
     
     ["sin( number )"] = InternalFunction(function(value)
-        if not isnumber(value) then
-            return throw(tostring(value).." is not a number", 3, true)
-        end
         return math.sin(math.rad(value))
-    end),
+    end, "number"),
     ["print( any )"] = InternalFunction(function(...)
         print(...)
         return nil

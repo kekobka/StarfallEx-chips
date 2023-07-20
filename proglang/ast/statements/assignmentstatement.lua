@@ -23,7 +23,7 @@ end
 function AssignmentStatement:execute()
     local result = self.ex:eval()
     if not _G["is"..self.type](result) then
-        return throw(result .. " is not a ".. self.type)
+        return throw( tostring(result).. " is not a ".. tostring(self.type))
     end
     Variables[self.var] = result
     return result

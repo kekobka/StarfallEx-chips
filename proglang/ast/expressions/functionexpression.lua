@@ -19,9 +19,9 @@ function FunctionExpression:eval()
     local values = {}
     local types = {}
     for _, arg in next, self.args do
-        table.insert(values, arg:eval())
         
-        table.insert(types, tostring(arg.type))
+        table.insert(values, arg:eval())
+        table.insert(types, VariablesTypes[arg.name] or arg.type)
     end
     
     local fn = FUNCTIONS[self.name.."( "..table.concat(types,", ").." )"]
@@ -43,7 +43,7 @@ function FunctionExpression:eval()
         VariablesStackPop()
         return result
     end
-    
+
     return fn:execute(unpack(values))
 end
 

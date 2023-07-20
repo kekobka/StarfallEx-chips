@@ -16,34 +16,12 @@ local Lexer = require("./parser/lexer.lua")
 local Parser = require("./parser/parser.lua")
 
 CODE = [[
-
-/*
+number s = 1
 fn test() {
-    num i = 1
-    for num j = 1, j <= 5, j++ {
-        print(j)
-    }
-    test(i)
-    print(i)
+    s++
 }
-
-
-fn test(num i) {
-    i++
-}
-
-num i = 1
-test(i)
-print(i)
-*/
-
-i = i + i
-string i = 2 + 3 * 2 + "b"
-
-
-print(i)
-
-
+test()
+print(s)
 ]]
 
 //Task(function()

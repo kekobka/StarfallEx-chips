@@ -189,7 +189,7 @@ function Lexer:initialize(input)
 
     local function tokenizeComment()
         local curr = peek(0)
-        while not ("\r\n\0"):find(curr) do
+        while not ("\r\n"):find(curr) do
             curr = next()
         end
     end

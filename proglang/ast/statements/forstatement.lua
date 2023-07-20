@@ -30,5 +30,5 @@ end
 
 function ForStatement:__tostring()
 
-    return "for (" .. tostring(self.init) .. " " .. tostring(self.terminate) .. " " .. tostring(self.inc) .. ") { \n\t" .. tostring(self.block) .. "}"
+    return "for (" .. tostring(self.init) .. ", " .. tostring(self.terminate) .. ", " .. tostring(self.inc) .. ") { \n\t" .. tostring(self.block) .. "}"
 end
