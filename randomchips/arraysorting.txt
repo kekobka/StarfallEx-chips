@@ -1,0 +1,243 @@
+--@client
+--@include libs/task.txt
+local Task = require("libs/task.txt")
+
+array = {}
+
+local count = 1024
+local speed = 4096
+
+
+local div = 1
+
+
+local snd = sound.create(chip():getLinkedComponents()[1], "synth/sine.wav")
+snd:play()
+INFO = {}
+local function swap(a, b)
+
+    array[a], array[b] = array[b], array[a]
+    
+    snd:setPitch((array[a] or 1) / count * 255)
+    Task.yield(2)
+end
+local function set(a,b)
+
+    array[a] = b
+    snd:setPitch(b / count * 255)
+    Task.yield()
+end
+
+function quicksort(arr, low, high)
+    
+    low = low or 1
+    high = high or #arr
+    if low < high then
+        local pivotIndex = partition(arr, low, high)
+        
+        return Task.all{
+            Task.run(function() quicksort(arr, low, pivotIndex - 1) end),
+            Task.run(function() quicksort(arr, pivotIndex + 1, high) end)
+        }
+        
+    end
+end
+
+
+function partition(arr, low, high)
+    local pivot = arr[high]
+    local i = low - 1
+    for j = low, high - 1 do
+        if arr[j] <= pivot then
+            i = i + 1
+            swap(i, j)//arr[i], arr[j] = arr[j], arr[i]
+        end
+    end
+    swap(i + 1, high)
+    //arr[i + 1], arr[high] = arr[high], arr[i + 1]
+    return i + 1
+end
+
+function bubbleSort(array)
+    for i = 1,#array do
+        for j = 1, #array - i do
+            if array[j] > array[j + 1] then
+                swap(j, j+1)
+            end
+        end
+    end
+end
+
+function insertionSort(arr)
+  local n = #arr
+  for i = 2, n do
+    local j = i - 1
+    while j > 0 and arr[j] > arr[j + 1] do
+      swap(j, j + 1)
+      j = j - 1
+    end
+  end
+end
+
+function getMaxValue(arr)
+  local max = arr[1]
+  for i = 2, #arr do
+    if arr[i] > max then
+      max = arr[i]
+    end
+  end
+  return max
+end
+
+function radixSort(arr)
+  local n = #arr
+  local max = getMaxValue(arr)
+
+  local exp = 1
+  while math.floor(max / exp) > 0 do
+    local count = {}
+    local output = {}
+    
+    for i = 0, 9 do
+      count[i] = 0
+    end
+
+    for i = 1, n do
+      local digit = math.floor(arr[i] / exp) % 10
+      count[digit] = count[digit] + 1
+    
+    end
+
+    for i = 1, 9 do
+      count[i] = count[i] + count[i - 1]
+    end
+
+    local output = {}
+    for i = n, 1, -1 do
+      local digit = math.floor(arr[i] / exp) % 10
+      output[count[digit]] = arr[i]
+      count[digit] = count[digit] - 1
+    end
+
+    for i = 1, n do
+      set(i,output[i])
+    end
+
+    exp = exp * 10
+  end
+end
+
+
+
+local function bitonicCompareAndSwap(i, j, dir)
+    if (dir == 1 and array[i] > array[j]) or (dir == 0 and array[i] < array[j]) then
+        swap(i, j)
+    end
+end
+
+local function bitonicMerge(array, low, count, dir)
+    if count > 1 then
+        local k = math.floor(count / 2)
+        for i = low, low + k - 1 do
+            bitonicCompareAndSwap(i, i + k, dir)
+        end
+        return Task.all{
+            Task.run(function() bitonicMerge(array, low, k, dir) end),
+            Task.run(function() bitonicMerge(array, low + k, k, dir) end)
+            }
+    end
+end
+
+local function bitonicSort(array, low, count, dir)
+    if count > 1 then
+        local k = math.floor(count / 2)
+        Task.all{
+            Task.run(function() bitonicSort(array, low, k, 1) end),
+            Task.run(function() bitonicSort(array, low + k, k, 0) end)
+            }
+        bitonicMerge(array, low, count, dir)
+    end
+end
+
+local function sortBitonic(array)
+    local n = #array
+    local dir = 1
+
+    bitonicSort(array, 1, n, dir)
+end
+
+function bitonicSortLined(arr)
+    local n = #arr
+    local k, j, l, i
+    k = 2
+    while k <= n do
+        j = k / 2
+        while j > 0 do
+            for i = 1, n do
+                l = bit.bxor(i, j)
+                if l > i then
+                    if ((bit.band(i, k) or 0) == 0 and (arr[i] or 0) > (arr[l] or 0)) or ((bit.band(i, k) or 0) ~= 0 and (arr[i] or 0) < (arr[l] or 0)) then
+                        swap(i, l)
+                    end
+                end
+            end
+            j = j / 2
+        end
+        k = k * 2
+    end
+end
+
+local solve = async* function()
+    quicksort(array)
+end
+
+
+local function random()
+    for a = 1, count do
+        local b = math.random(1, count)
+        array[a], array[b] = array[b], array[a]
+    end
+    return true
+end
+
+local function fill()
+    for i = 1, count do
+        array[i] = i
+    end
+    return true
+end
+
+
+Task.run(function()
+    fill()
+    random()
+    Task.While(false)
+    _ = await* solve()
+    snd:stop()
+    print("STOP")
+end)
+
+render.createRenderTarget("rt")
+hook.add("render","paint",function()
+
+    render.selectRenderTarget("rt")
+    render.clear(Color(0,0,0,250))
+    for x = 1, 1023, div do
+        local h = array[x] or 0
+        render.setRGBA(255,255,255,255)
+        if INFO[x] then
+            render.setRGBA(0,255,0,255)
+        end
+        render.drawRectFast( x * div - 1, 1024 - h, div, h)
+    end
+    render.selectRenderTarget()
+    
+    render.setRenderTargetTexture("rt")
+    render.setFilterMag(1)
+    render.drawTexturedRect(0,0,512,512)
+end)
+
+
+
+
+
