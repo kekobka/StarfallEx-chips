@@ -1,0 +1,68 @@
+--@name main
+--@author discord.gg/6Q5NnHQTrh // kekobka // STEAM_0:0:186583728
+--@server
+
+--@include libs/task.txt
+local Task = require("libs/task.txt")
+--@includedir ./lib/
+requiredir("./lib/")
+
+--@includedir ./ast/visitors/
+requiredir("./ast/visitors/")
+
+--@include ./parser/lexer.lua
+local Lexer = require("./parser/lexer.lua")
+--@include ./parser/parser.lua
+local Parser = require("./parser/parser.lua")
+
+CODE = [[
+
+/*
+fn test() {
+    num i = 1
+    for num j = 1, j <= 5, j++ {
+        print(j)
+    }
+    test(i)
+    print(i)
+}
+
+
+fn test(num i) {
+    i++
+}
+
+num i = 1
+test(i)
+print(i)
+*/
+
+i = i + i
+string i = 2 + 3 * 2 + "b"
+
+
+print(i)
+
+
+]]
+
+//Task(function()
+    local p = Lexer(CODE)
+    local tokens = p:tokenize()
+    for _,v in next, tokens do
+        //print(v)
+    end
+    
+    local program = Parser(tokens):parse()
+
+    print("```" .. tostring(program) .. "```")
+    //printTable(VariablesTypes)
+
+    program:accept(FunctionAdder())
+    program:execute()
+
+
+    
+
+//end)
+
