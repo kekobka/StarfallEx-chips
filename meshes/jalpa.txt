@@ -1,0 +1,244 @@
+--@name jalpa
+--@author discord.gg/6Q5NnHQTrh // kekobka // STEAM_0:0:186583728
+--@shared
+
+--@include libs/MeshBuilder.txt
+local MeshBuilder = require("libs/MeshBuilder.txt")
+
+if SERVER then
+    
+    --@include libs/task.txt
+    local Task = require("libs/task.txt")
+    local baseOffsetAngle = Angle(0,0,90)
+    local axles = {
+        {
+            pos = Vector(35,-17,-51), // back
+            ang = Angle(90,0,0)
+        },
+        {
+            pos = Vector(33,-16.5,48.5), //front
+            ang = Angle(90,0,0),
+            steer = true,
+        }
+    }
+    local seats = {
+        {
+            pos = Vector(16,-32,0), // left
+            ang = Angle(0,0,10)
+        },
+        {
+            pos = Vector(-16,-32,0), // right
+            ang = Angle(0,0,10)
+        }
+    }
+
+    local createWheel = async* function(base, pos, ang)
+        while not prop.canSpawn() do
+            Task.sleep(250)
+        end
+        
+        local wheel = prop.create(base:localToWorld(pos), base:localToWorldAngles(ang + Angle(-180,0,-90)), "models/sprops/trans/wheel_d/t_wheel25.mdl", true)
+        constraint.nocollide(wheel, base)
+        wheel:setMass(68)
+        wheel:enableSphere(true)
+        wheel:setInertia(Vector(6,5,6))
+        wheel:getPhysicsObject():setMaterial("jeeptire")
+        wheel:enableDrag(false)
+        wheel:getPhysicsObject():enableMotion(false)
+        while not prop.canSpawn() do
+            Task.sleep(250)
+        end
+        
+        local plate = prop.create(wheel:localToWorld(Vector(0,0,15)), base:localToWorldAngles(ang + Angle(0,0,90)), "models/sprops/rectangles_superthin/size_1/rect_3x3.mdl", true)
+        plate:enableMotion(true)
+        plate:getPhysicsObject():sleep()
+        plate:setNocollideAll(true)
+        plate:setDrawShadow(false)
+        plate:setNoDraw(true)
+        plate:setMass(0.1)
+        plate:setParent(base)
+        plate:enableDrag(false)
+        
+        return wheel, plate
+    end
+    local createSeat = async* function(base, pos, ang)
+        while not prop.canSpawn() do
+            Task.sleep(250)
+        end
+        
+        local seat = prop.createSeat(base:localToWorld(pos), base:localToWorldAngles(ang + Angle(-180,0,-90)), "models/nova/chair_office02.mdl", true)
+        seat:setParent(base)
+        seat:setSolid(true)
+        seat:setNocollideAll(true)
+        seat:setNoDraw(true)
+        return seat
+    end
+    local suspensiontravel = 10
+    local ropeLength = 15
+    local LimiterRopeLength = math.sqrt( (suspensiontravel * 0.5) ^ 2 + suspensiontravel ^ 2 )
+    
+    local createSuspension = async* function(base, wheel, plate)
+
+        constraint.elastic(1, wheel, base, 0, 0, Vector(0,0,0), base:worldToLocal(wheel:localToWorld(Vector(0,0,suspensiontravel))), 42000, 1000, 1200, nil, false)
+        
+        constraint.rope(2, wheel, base, 0, 0, Vector(0,-4,0), base:worldToLocal(wheel:localToWorld(Vector(ropeLength,-ropeLength,0))), nil, 0, 0, DEBUG, 0, true)
+        constraint.rope(3, wheel, base, 0, 0, Vector(0,-4,0), base:worldToLocal(wheel:localToWorld(Vector(-ropeLength,-ropeLength,0))), nil, 0, 0, DEBUG, 0, true)
+        constraint.rope(4, wheel, base, 0, 0, Vector(0,-4,0), base:worldToLocal(wheel:localToWorld(Vector(0, -suspensiontravel/2 - 4, 0))), LimiterRopeLength/2, 0, 0, DEBUG, 0, false)
+        
+        constraint.ballsocketadv(wheel, plate, 0, 0, Vector(0), Vector(0), 0, 0, Vector(-180, -0.1, -180), Vector(180, 0.1, 180), Vector(0), true, true)
+        constraint.ballsocketadv(wheel, plate, 0, 0, Vector(0), Vector(0), 0, 0, Vector(-180, -180, -0.1), Vector(180, 180, 0.1), Vector(0), true, true)
+        constraint.ballsocketadv(wheel, plate, 0, 0, Vector(0), Vector(0), 0, 0, Vector(-180, -0.1, -0.1), Vector(180, 0.1, 0.1), Vector(0), true, true)
+
+    end
+    
+    local createAxle = async* function(base, pos, ang)
+        local right, left = Task.all{
+            createWheel(base, pos, ang),
+            createWheel(base, pos:clone():setX(-pos.x), -ang)
+        }
+        createSuspension(base, unpack(right))
+        createSuspension(base, unpack(left))
+        right[1]:setFrozen(false)
+        left[1]:setFrozen(false)
+        return {right = right[2],left = left[2]}
+    end
+
+    local drivers = {}
+    local chairs = {}
+    local function set_driver(ply, chair, role)
+
+        if not chairs[chair] then return end
+        local driver = role and ply 
+        drivers[chair] = driver
+
+        enableHud(ply, role and true or false)
+    end
+    
+    
+    local builder = MeshBuilder("https://raw.githubusercontent.com/kekobka/valera/main/jalpa.obj")
+    chip():setPos(chip():getPos() + Vector(0,0,55))
+    chip():setDrawShadow(false)
+    local pos = Vector(0,0,-25)
+    local ang = Angle(0,0,90)
+    local physics = builder:phys({"physics","physics.001","physics.002"}, pos, ang, Vector(1), nil, chip())
+    local Body = builder:build("body", Vector(0,0,-25), baseOffsetAngle, Vector(1), chip(), chip(), Color(255,255,255),"phoenix_storms/pack2/interior_sides")
+
+    
+    
+    ;(async* function()
+        local body = await* physics()
+        body:setMass(600)
+        body:setInertia(Vector(0.2, 2, 2) * 600)
+        body:setNoDraw(true)
+        Body:setParent(body)
+        chip():setParent(body)
+        
+        local plates = {}
+        for _, info in next, axles do
+            local axle = await* createAxle(body, info.pos, info.ang)
+            table.insert(plates, axle)
+        end
+        
+        
+        for _, info in next, seats do
+            local seat = await* createSeat(body, info.pos, info.ang)
+            chairs[seat] = true
+        end
+
+    
+        hook.add("PlayerEnteredVehicle", "SetDriver", set_driver)
+        hook.add("PlayerLeaveVehicle", "SetDriver", set_driver)
+        hook.add("think","steering",function()
+            for id, axle in next, plates do
+                axle.right:setFrozen(true)
+                axle.left:setFrozen(true)
+                axle.right:getPhysicsObject():setAngles(body:localToWorldAngles(Angle(0,-90,0)))
+                axle.left:getPhysicsObject():setAngles(body:localToWorldAngles(Angle(0,90,0)))
+            end
+        end)
+        body:setFrozen(false)
+    end)()
+    builder:apply()
+    
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

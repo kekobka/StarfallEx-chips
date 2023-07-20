@@ -1,0 +1,99 @@
+--@name VOLGA
+--@author discord.gg/6Q5NnHQTrh // kekobka // STEAM_0:0:186583728
+--@shared
+
+--@include libs/MeshBuilder.txt
+local MeshBuilder = require("libs/MeshBuilder.txt")
+
+if SERVER then
+
+    local builder = MeshBuilder("https://github.com/kekobka/valera/raw/main/volga.obj")
+    
+    //builder:phys("physics",  Vector(), Angle(0,0,90), chip())
+    builder:build("physics", Vector(), Angle(0,0,90),Vector(1), chip())
+    
+    builder:apply()
+    
+//z
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
