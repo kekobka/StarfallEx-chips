@@ -1,0 +1,381 @@
+--@name MeshBuilder
+--@author discord.gg/6Q5NnHQTrh // kekobka // STEAM_0:0:186583728
+--@shared
+
+
+--@include libs/task.txt
+local Task = require("libs/task.txt")
+
+--@include libs/perms.txt
+local PERMA = require("libs/perms.txt")()
+
+local _cachedMaterials = {}
+
+local function isURL(str)
+    local _1, _2, prefix = str:find("^(%w-):")
+
+    return prefix == "http" or prefix == "https" or prefix == "data"
+end
+
+local MeshBuilder = class("MeshBuilder")
+
+
+function MeshBuilder:initialize(link, d)
+    self.link = link
+    self.debug = d or false
+    if CLIENT then
+        PERMA:check("http.get", link):setup()
+    end
+    self.props = {}
+    self.objects = {}
+    self.players = {}
+    self.waiting = {}
+    
+    hook.add("clientinitialized", table.address(self), function(ply)
+        table.insert(self.players, ply)
+        if self.applyed then
+            self:send(ply)
+        else
+            table.insert(self.waiting, ply)
+        end
+    end)
+end
+if SERVER then
+    function MeshBuilder:build(name, pos, ang, scale, parent, relativeTo, color, mat)
+        local rto = relativeTo or parent
+        local holo = hologram.create(rto and rto:localToWorld(pos) or pos, rto and rto:localToWorldAngles(ang) or ang, "models/starfall/holograms/box.mdl", scale)
+        if parent then
+            holo:setParent(parent)
+        end
+        self.objects[name] = {holo = holo, color = color, mat = (type(mat) == "table" and mat or { basetexture = tostring(mat) })}
+        return holo
+    end
+    
+    function MeshBuilder:phys(name, pos, ang, scale, parent, relativeTo)
+        
+        local prop = nil
+        table.insert(self.props, {name, pos, ang, scale, parent, relativeTo, function(p)
+            prop = p
+        end})
+        
+        return async* function(wait)
+            
+            while not prop do
+                Task.sleep(wait or 250)
+            end                
+            return prop
+        end
+        
+    end
+    
+    MeshBuilder.serverParse = async* function(self)
+        
+        for _, p in next, self.props do
+            local names, pos, ang, scale, parent, rto, task = unpack(p)
+            
+            self.rawObj = await* http.get(self.link)
+    
+            local old = Task.While(true)
+            self.meshes = mesh.parseObj(self.rawObj, true)
+            Task.While(old)
+            local t = {}
+            local sito = {}
+            if isstring(names) then 
+                names = {names}
+            end
+            
+            for Id, name in next, names do
+                t[Id] = {}
+                for _, i in next, self.meshes[name] do
+                    if not sito[i.pos] then
+                        table.insert(t[Id], i.pos * scale)
+                        sito[i.pos] = true
+                    end
+                end
+            end
+
+            local p = prop.createCustom(rto and rto:localToWorld(pos) or pos, rto and rto:localToWorldAngles(ang) or ang, t, true)
+            p:setParent(parent)
+            
+            task(p)
+        end
+        
+    end
+    
+    
+    function MeshBuilder:apply(d)
+        self.applyed = true
+        
+        if #self.waiting > 0 then
+            self:send(self.waiting)
+            self.waiting = {}
+        end
+        self:serverParse()
+    end
+    function MeshBuilder:send(ply)
+
+        net.start("MeshBuilder.apply")
+        net.writeBool(self.debug)
+        net.writeString(self.link)
+        net.writeTable(self.objects)
+        net.send(ply, false)
+        
+    end
+    local function sendNotify(ply,bool)
+
+        if not isValid(owner()) then
+            return
+        end
+        net.start("MeshBuilder.notify")
+        net.writeBool(bool)
+        net.writeEntity(ply)
+        net.send(owner(), false)
+    end
+    net.receive("MeshBuilder.applyed", function(len, ply)
+        sendNotify(ply,false)
+    end)
+    net.receive("MeshBuilder.Parsed", function(len, ply)
+        sendNotify(ply,true)
+    end)
+    net.receive("MeshBuilder.error", function(len, ply)
+        sendNotify(ply,true)
+    end)
+    
+else
+    
+    local initialChipName = chip():getChipName()
+    local function setStatus(status)
+        setName(string.format("%s (%s)", initialChipName, status))
+    end
+    hook.add("StarfallError",table.address(MeshBuilder),function()
+        net.start("MeshBuilder.error")
+        net.send()
+    end)
+    net.receive("MeshBuilder.apply", function()
+        local debug = net.readBool()
+        local link = net.readString()
+        local objects = net.readTable()
+        local builder = MeshBuilder(link, debug)
+        builder.objects = objects
+        builder:parse()
+    end)
+    
+    net.receive("MeshBuilder.notify", function()
+        local type = net.readBool()
+        local ply = net.readEntity()
+        
+        if type then
+            notification.kill(tostring(ply:getUserID()))
+            return
+        end
+        
+        notification.addProgress(tostring(ply:getUserID()), string.format("%s is loading mesh", ply:getName()))
+    end)
+    
+
+    local fancyStatus = async* function(status)
+        local count = 0
+        while true do
+            count = count%3 + 1
+            setStatus(status..("."):rep(count))
+            Task.sleep(450)
+        end
+    end
+    MeshBuilder.parse = async* function(self)
+
+        if not self.debug and table.count(self.objects) <= 0 then
+            return
+        end
+        Task.While(false)
+        local count = 0
+        local wait = fancyStatus("wait permissions")
+        while not PERMA.satisfied do
+            Task.yield()
+        end
+        wait:kill()
+        
+        net.start("MeshBuilder.applyed")
+        net.send()
+        
+        local Getting = fancyStatus("Getting file")
+        self.rawObj = await* http.get(self.link)
+        Getting:kill()
+
+        
+        local triangles = mesh.trianglesLeft()
+        local last = Task.While(true)
+
+        local parsing = fancyStatus("File received, parsing")
+        self.meshData = mesh.createFromObj(self.rawObj, true)
+        parsing:kill()
+        Task.While(last)
+        self:onParsed(triangles - mesh.trianglesLeft())
+        self:_applyMeshes()
+
+        setName(initialChipName)
+    end
+    function MeshBuilder:onParsed()
+        
+    end
+        
+    MeshBuilder._applyMeshes = async* function(self)
+        local last = Task.While(false)
+        local meshData = self.meshData
+        if self.debug then
+            for name, v in pairs(self.meshData) do
+                local holo = hologram.create(chip():getPos(), Angle(), "models/starfall/holograms/box.mdl", Vector(1))
+                holo:setRenderBounds(Vector(-200), Vector(200))
+                holo:setMesh(v)
+                holo:setParent(chip())
+                print(name)
+                Task.sleep(500)
+            end
+        else
+            for name, v in pairs(self.objects) do
+                if self.meshData[name] ~= nil then
+                    
+                    local color = v.holo:getColor()
+                    
+                    v.holo:setRenderBounds(Vector(-200), Vector(200))
+                    v.holo:setMesh(self.meshData[name])
+                    local mat = v.mat
+                    v.mat = self:_createMaterial(mat.shader, mat.basetexture, mat.bumpmap, mat.options)
+                    if v.mat then v.holo:setMeshMaterial(v.mat) end
+        
+                    v.meshApplied = true
+                    meshData[name] = nil
+                end
+                Task.yield()
+            end
+        end
+        net.start("MeshBuilder.Parsed")
+        net.send()
+        Task.While(last)
+    end
+    
+    
+    
+    function MeshBuilder:_setTexture(mat, name, texture, layoutOptions)
+        if isURL(texture) then
+            texture = texture .. "#hack" .. math.random(1337)
+            layoutOptions = layoutOptions or {}
+    
+            mat:setTextureURL(name, texture, function(_, _, _, _, layout)
+                if not layout then return end
+    
+                local x = layoutOptions.x or 0
+                local y = layoutOptions.y or 0
+                local w = layoutOptions.w or 1024
+                local h = layoutOptions.h or 1024
+                
+                layout(x, y, w, h)
+            end)
+        else
+            mat:setTexture(name, texture)
+        end
+    end
+    
+    function MeshBuilder:_createMaterial(shader, basetexture, bumpmap, options)
+        shader = shader or "VertexLitGeneric"
+        basetexture = basetexture or "models/debug/debugwhite"
+        bumpmap = bumpmap or ""
+        options = options or {}
+    
+        local checksum = crc(shader .. basetexture .. bumpmap .. json.encode(options))
+    
+        if _cachedMaterials[checksum] ~= nil then
+            return _cachedMaterials[checksum]
+        end
+    
+        local mat = material.create(shader)
+    
+        self:_setTexture(mat, "$basetexture", basetexture, options.baseLayout)
+    
+        if bumpmap ~= "" then
+            self:_setTexture(mat, "$bumpmap", bumpmap, options.bumpLayout)
+        end
+    
+        for k, v in pairs(options) do
+            if type(v) == "string" then
+                mat:setString("$" .. k, v)
+            elseif type(v) == "number" then
+                if string.match(tostring(v), "%.") then
+                    mat:setFloat("$" .. k, v)
+                else
+                    mat:setInt("$" .. k, v)
+                end
+            elseif type(v) == "nil" then
+                mat:setUndefined("$" .. k, v)
+            elseif type(v) == "Vector" then
+                mat:setVector("$" .. k, tostring(v))
+            end
+        end
+    
+        _cachedMaterials[checksum] = mat
+    
+        return mat
+    end
+end
+
+
+
+return MeshBuilder
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
