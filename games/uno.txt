@@ -1,0 +1,339 @@
+--@name UNO
+--@author discord.gg/6Q5NnHQTrh // kekobka // STEAM_0:0:186583728
+--@shared
+
+--[[
+
+            ██╗░░██╗███████╗██╗░░██╗░█████╗░██████╗░██╗░░██╗░█████╗░
+            ██║░██╔╝██╔════╝██║░██╔╝██╔══██╗██╔══██╗██║░██╔╝██╔══██╗
+            █████═╝░█████╗░░█████═╝░██║░░██║██████╦╝█████═╝░███████║
+            ██╔═██╗░██╔══╝░░██╔═██╗░██║░░██║██╔══██╗██╔═██╗░██╔══██║
+            ██║░╚██╗███████╗██║░╚██╗╚█████╔╝██████╦╝██║░╚██╗██║░░██║
+            ╚═╝░░╚═╝╚══════╝╚═╝░░╚═╝░╚════╝░╚═════╝░╚═╝░░╚═╝╚═╝░░╚═╝
+
+]]--
+
+--@include libs/Task.txt
+local Task = require('libs/Task.txt')
+
+MIN_PLAYERS = 2
+MAX_PLAYERS = 4
+if SERVER then
+    --@include libs/e2core.txt
+    local e2core = require('libs/e2core.txt')
+    holo = e2core:new()
+
+    local function createSeat(Pos, ang)
+        return prop.createSeat(Pos + ang:getForward() * 45, ang + Angle(0,90,0), "models/nova/chair_office02.mdl", true)
+    end
+    local chairs = {}
+    local ready = {}
+    local AvalPlayers = {}
+    
+    local function set_driver(ply, chair, role)
+
+        if not chairs[chair] then return end
+        local driver = role and ply 
+        chairs[chair] = driver or true
+        if role then
+            enableHud(ply, true)
+        else
+            enableHud(ply, false)
+        end
+        net.start("setDriver")
+        net.writeEntity(chair)
+        net.writeBit(role and 1 or 0)
+        
+        net.writeEntity(driver or game.getWorld())
+        net.send(nil,false)
+        AvalPlayers[chair] = driver
+        ready[chair] = nil
+    end
+    
+    hook.add("PlayerEnteredVehicle", "SetDriver", set_driver)
+    hook.add("PlayerLeaveVehicle", "SetDriver", set_driver)
+
+    ;(async* function(count)
+        
+        net.start("chairs")
+        for i = 1, count do
+            while not prop.canSpawn() do
+                Task.sleep(50)
+            end
+            local ang = Angle():rotateAroundAxis(Vector(0, 0, 1), i * 360 / count)
+            local chair = createSeat(chip():getPos(), ang)
+            net.writeBit(1)
+            net.writeEntity(chair)
+            chairs[chair] = true
+        end
+        net.writeBit(0)
+        net.send(nil, false)
+        local Table = holo.create(chip():getPos() + Vector(0,0,25),Angle(),"cube")
+        Table:setScale(Vector(5,5,0.1))
+        Table:setColor(Color(85, 107, 47, 255))
+        
+        
+        
+    end)(MAX_PLAYERS)
+
+    
+    net.receive("addbot",function()
+        for chair, ply in next, chairs do
+            if ply ~= true then
+                continue 
+            end
+            net.start("setDriver")
+            net.writeEntity(chair)
+            net.writeBit(1)
+            net.writeEntity(game.getWorld())
+            net.send(nil,false)
+            AvalPlayers[chair] = game.getWorld()
+            chairs[chair] = game.getWorld()
+            ready[chair] = true
+            break
+        end
+    end)
+    
+    net.receive("Start",function(_, ply)
+        ready[ply:getVehicle()] = true
+        
+        if table.count(AvalPlayers) == table.count(ready) then
+            net.start("STARTGAME")
+            net.send()
+            print("start")
+            //startGame()
+        end
+    end)
+    
+else
+    
+    
+    local chairs = {}
+    local STARTGAME
+    
+    net.receive("chairs",function()
+        local Bit = net.readBit()
+        while Bit == 1 do
+            local chair = net.readEntity()
+            chairs[chair] = true
+            Bit = net.readBit()
+        end
+    end)
+    
+    net.receive("STARTGAME",function()
+        STARTGAME = true
+    end)
+    
+    net.receive("setDriver",function()
+        local chair = net.readEntity()
+        local Bit = net.readBit()
+        if Bit == 1 then
+            local ply = net.readEntity()
+            chairs[chair] = ply
+            return
+        end
+        chairs[chair] = true
+        
+    end)
+    
+    local fontTargetID32 = render.createFont("TargetID",32,500,true,false,true,false,0,false,0)
+    
+    local d3font = render.createFont("TargetID",54,500,true,false,false,false,0,false,0)
+    
+    hook.add("drawhud","",function()
+        for chair, ply in next, chairs do
+            if ply == true then
+                continue 
+            end
+
+            local name = isValid(ply) and ply:getName() or "BOT"
+            local pos = (chair:getPos() + Vector(0, 0, 60)):toScreen()
+            
+            render.setFont(fontTargetID32)
+            render.drawSimpleText(pos.x, pos.y, name, 1, 1)
+        end
+
+    end)
+
+    
+    function render.drawBG()
+        render.setRGBA(151,151,151,151)
+        render.drawRectFast(-256,-256,512,512)
+        render.setRGBA(0,0,0,200)
+        render.drawRectFast(-240,-240,480,480)
+    end
+
+
+    local m = Matrix()
+    m:setScale(Vector(0.05,0.05,0.05))
+    
+    function render.cursor()
+        local pos = trace.intersectRayWithPlane(player():getShootPos(), player():getAimVector() * 65655, m:getTranslation(), m:getAngles():getUp())
+        if pos then
+            return worldToLocal(pos, m:getAngles(), m:getTranslation(), m:getAngles()) / m:getScale()
+        end
+        return Vector()
+    end
+    
+    function inrange(pos, minx, miny, max, maxy)
+        return pos.x > minx and pos.x < minx + max and pos.y > miny and pos.y < miny + maxy
+    end
+    local pressed = false
+    function Button(v, minx, miny, name)
+        render.setRGBA(0,0,0,250)
+        local w, h = render.getTextSize(name)
+        if inrange(v, minx, miny, w, h) then
+            render.setRGBA(0,150,0,250)
+            if input.isMouseDown(MOUSE.MOUSE1) then
+                if not pressed then
+                    pressed = true
+                    return true
+                end
+            else
+                pressed = false
+            end
+        end
+        
+        render.drawRectFast(minx, miny, w, h)
+        render.setRGBA(255,255,255,255)
+        render.drawSimpleText(minx, miny, name)
+    end
+    
+    hook.add("postdrawtranslucentrenderables","",function()
+        if STARTGAME then return end
+        local lchair = player():getVehicle()
+        if not isValid(lchair) then return end
+        
+        local v = render.cursor()
+        
+        m:setTranslation(lchair:localToWorld(Vector(0,25,30)))
+        m:setAngles(lchair:getAngles() + Angle(0,0,-120))
+        
+        render.pushMatrix(m,true)
+        render.setFont(d3font)
+        
+        render.drawBG()
+        
+        render.setRGBA(255,255,255,255)
+        render.drawSimpleText(0, -240, "UNO", 1, 0)
+        render.drawSimpleText(0, -240 + 54, "Waiting players...", 1, 0)
+        local id = 1
+        local fid = 1
+        for chair, ply in next, chairs do
+            
+            fid = fid + 1
+            
+            if ply == true then
+                
+                local pos = -240 + 56 * fid
+                
+                render.drawSimpleText(0, pos, "?????", 1, 0)
+                
+            else
+                
+                id = id + 1
+                
+                local name = isValid(ply) and ply:getName() or "BOT"
+                local pos = -240 + 56 * fid
+                
+                render.drawSimpleText(0, pos, name, 1, 0)
+            end
+
+        end
+        if Button(v, -240, 186, "Add bot") then
+            net.start("addbot")
+            net.send()
+        end
+        if id > MIN_PLAYERS  then
+            local w, h = render.getTextSize("Start")
+            if Button(v, 240 - w, 186, "Start") then
+                net.start("Start")
+                net.send()
+            end
+        end
+        
+        render.drawRectFast(math.clamp(v.x - 3, -256, 250), math.clamp(v.y - 3, -256, 250), 6, 6)
+        
+    end)
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

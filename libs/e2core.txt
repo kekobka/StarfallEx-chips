@@ -53,6 +53,7 @@ e2core.commands = {
     holoUnparent = 15;
     setSkin = 16;
     setAnimation = 17;
+    setBodygroup = 18;
 }
     
 function e2core:initialize()
@@ -179,6 +180,10 @@ while(perf() & holoCanCreate() & Link[159812789] ){
         }elseif(Command == ]]..e2core.commands.setSkin..[[){ # setSkin
         
             holoSkin(Index,Link[10219])
+        
+        }elseif(Command == ]]..e2core.commands.setBodygroup..[[){ # setBodygroup
+        
+            holoBodygroup(Index,Link[10219],Link[10220])
         
         }elseif(Command == ]]..e2core.commands.setAnimation..[[){ # setAnimation
             local STRING_LEN = Link[10221]
@@ -523,6 +528,13 @@ function e2holo:setAnimation(value)
     hook.run("writecell",10215, e2core.commands.setAnimation)
     hook.run("writecell",10216, self.index)
     writeString(10220,value)
+end
+
+function e2holo:setBodygroup( bgrp_id, bgrp_subid)
+    hook.run("writecell",10215, e2core.commands.setBodygroup)
+    hook.run("writecell",10216, self.index)
+    hook.run("writecell",10219, bgrp_id)
+    hook.run("writecell",10220, bgrp_subid)
 end
 
 
