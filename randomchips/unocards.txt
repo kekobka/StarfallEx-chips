@@ -1,0 +1,262 @@
+--@name randomchips/UNOCards
+--@author discord.gg/6Q5NnHQTrh // kekobka // STEAM_0:0:186583728
+--@shared
+
+--[[
+
+            ██╗░░██╗███████╗██╗░░██╗░█████╗░██████╗░██╗░░██╗░█████╗░
+            ██║░██╔╝██╔════╝██║░██╔╝██╔══██╗██╔══██╗██║░██╔╝██╔══██╗
+            █████═╝░█████╗░░█████═╝░██║░░██║██████╦╝█████═╝░███████║
+            ██╔═██╗░██╔══╝░░██╔═██╗░██║░░██║██╔══██╗██╔═██╗░██╔══██║
+            ██║░╚██╗███████╗██║░╚██╗╚█████╔╝██████╦╝██║░╚██╗██║░░██║
+            ╚═╝░░╚═╝╚══════╝╚═╝░░╚═╝░╚════╝░╚═════╝░╚═╝░░╚═╝╚═╝░░╚═╝
+
+]]--
+
+
+
+if SERVER then
+    
+    --@include libs/e2core.txt
+    local e2core = require('libs/e2core.txt')
+    holo = e2core:new()
+    local Card = class("Card")
+    local colors = {
+        red = Color(191,0,0),
+        yellow = Color(191,191,0),
+        green = Color(0,191,0),
+        blue = Color(51,99,191),
+        black = Color(21,21,21)
+    }
+    local specs = {
+        skip = true,
+        reverse = true,
+        addcard = true,
+    }
+    local blackspecs = {
+        ["+4"] = true,
+        ["color"] = true,
+    }
+    function Card:initialize(pos, color, value)
+        self.color = color
+        self.type = isnumber(value)
+        self.value = value
+        local base = holo.create(pos + Vector(0,0,35),Angle(90,0,0),"hq_stube_thin",Vector(1,0.7,0.02))
+        base:suppressEngineLighting(true)
+        local h = holo.create(pos + Vector(0.03,0,35),Angle(-55,90,90),"cplane",Vector(0.9,0.45,0.02))
+        h:suppressEngineLighting(true)
+        h:setParent(base)
+        local h = holo.create(pos + Vector(-0.1,0,35),Angle(90,0,0),"cube",Vector(0.9,0.64,0))
+        h:setColor(Color(25,25,25))
+        h:suppressEngineLighting(true)
+        h:setParent(base)
+        local h = holo.create(pos + Vector(-0.05,0,35),Angle(90,0,0),"cube",Vector(0.9,0.64,0))
+        h:setColor(colors[self.color])
+        h:suppressEngineLighting(true)
+        h:setParent(base)
+        self.base = base
+        self:calcNumber(pos)
+    end
+    function Card:calcNumber(pos)
+        if self.color == "black" then
+            
+            if self.value == "+4" then
+                local h = holo.create(pos + Vector(0.1, 1, 35), Angle(0, -90, 0), "models/sprops/misc/alphanum/alphanum_4.mdl",Vector(0.2,0.01,0.2))
+                h:setColor(colors[self.color])
+                h:suppressEngineLighting(true)
+                h:setParent(self.base)
+                
+                local h = holo.create(pos + Vector(0.1, -1, 35), Angle(0, 90, 0), "models/sprops/misc/alphanum/alphanum_plu.mdl",Vector(0.2,0,0.2))
+                h:setColor(colors[self.color])
+                h:suppressEngineLighting(true)
+                h:setParent(self.base)  
+            elseif self.value == "color" then
+                local I = 0
+                local scale = 0.4
+                for _,clr in next, colors do
+                    if _ == "black" then
+                        continue 
+                    end
+                    local h = holo.create(pos + Vector(0.1, 0, 35) + Vector(0,3*scale, 3*scale):getRotated(Angle(0,0,I)), Angle(-I, 90, 0), "models/sprops/geometry/t_qdisc_12.mdl",Vector(scale,0,scale))
+                    h:setColor(clr)
+                    h:suppressEngineLighting(true)
+                    h:setParent(self.base)
+                    I = I + 1 * 90
+                end
+
+                
+            end
+            
+            return
+        end
+        if self.type then
+
+            local h = holo.create(pos + Vector(0.1, 0, 35), Angle(0, -90, 0), ("models/sprops/misc/alphanum/alphanum_%i.mdl"):format(self.value),Vector(0.4,0.01,0.4))
+            h:setColor(colors[self.color])
+            h:suppressEngineLighting(true)
+            h:setBodygroup(0,1)
+            h:setParent(self.base)
+            
+            if self.value == 6 or self.value == 9 then
+                local h = holo.create(pos + Vector(0.1, 0, 32), Angle(0, -90, 0), "cube",Vector(0.1,0.01,0.02))
+                h:setColor(colors[self.color])
+                h:suppressEngineLighting(true)
+                h:setParent(self.base)
+            end
+            
+        else
+            if self.value == "skip" then
+                
+                local h = holo.create(pos + Vector(0.1, 0, 35), Angle(90, 0, 0), "hq_torus",Vector(0.34,0.34,0))
+                h:setColor(colors[self.color])
+                h:suppressEngineLighting(true)
+                h:setParent(self.base)  
+                
+                local h = holo.create(pos + Vector(0.1, 0, 35), Angle(55,90,90), "cube",Vector(0.03,0.3,0))
+                h:setColor(colors[self.color])
+                h:suppressEngineLighting(true)
+                h:setParent(self.base)  
+                
+            elseif self.value == "reverse" then
+                
+                local h = holo.create(pos + Vector(0.1, -0.2, 36), Angle(40, 90, 0), "models/sprops/misc/alphanum/alphanum_arrow_b.mdl",Vector(0.15,0.01,0.34))
+                h:setColor(colors[self.color])
+                h:suppressEngineLighting(true)
+                h:setParent(self.base)  
+                local h = holo.create(pos + Vector(0.1, 0.2, 34), Angle(220, 90, 0), "models/sprops/misc/alphanum/alphanum_arrow_b.mdl",Vector(0.15,0.01,0.34))
+                h:setColor(colors[self.color])
+                h:suppressEngineLighting(true)
+                h:setParent(self.base)  
+        
+            elseif self.value == "addcard" then
+                
+                local h = holo.create(pos + Vector(0.1, 1, 35), Angle(0, -90, 0), "models/sprops/misc/alphanum/alphanum_2.mdl",Vector(0.2,0.01,0.2))
+                h:setColor(colors[self.color])
+                h:suppressEngineLighting(true)
+                h:setBodygroup(0,1)
+                h:setParent(self.base)
+                
+                local h = holo.create(pos + Vector(0.1, -1, 35), Angle(0, 90, 0), "models/sprops/misc/alphanum/alphanum_plu.mdl",Vector(0.2,0,0.2))
+                h:setColor(colors[self.color])
+                h:suppressEngineLighting(true)
+                h:setParent(self.base)  
+        
+            end
+        end
+    end
+    local id = 0
+
+    for name in next, colors do
+        if name == "black" then
+            continue
+        end
+        local D = 0
+        for I = 0, 9 do
+            Card(chip():getPos() + Vector(0, id * 9, 35 + I * 13), name, I)
+            D = I
+        end
+        
+        for spec in next, specs do
+            D = D + 1
+            Card(chip():getPos() + Vector(0, id * 9, 35 + D * 13), name, spec)
+        end
+
+        id = id + 1
+    end
+    
+
+    
+    for name in next, blackspecs do
+
+            Card(chip():getPos() + Vector(0, id * 9, 35), "black", name)
+
+        id = id + 1
+    end
+    
+    
+else
+    
+    
+    
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

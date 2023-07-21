@@ -1,0 +1,107 @@
+--@name randomchips/tonSheporda
+--@author discord.gg/6Q5NnHQTrh // kekobka // STEAM_0:0:186583728
+--@client
+
+local sounds = {
+    sound.create(chip(),"synth/tri.wav"),
+    sound.create(hologram.create(chip():getPos(),Angle(),chip():getModel()),"synth/tri.wav"),
+    sound.create(hologram.create(chip():getPos(),Angle(),chip():getModel()),"synth/tri.wav"),
+}
+
+pitch = {
+    0,
+    48,
+    96,
+}
+
+A = 0
+timer.create("0", 1, 0, function()
+    A = A + 1
+end)
+hook.add("think","functi",function()
+    
+    for id, s in pairs(sounds) do
+        local p = math.remap((A + pitch[id]) % 192, 0, 192, 0, 255)
+        s:setPitch(p)
+        s:setVolume(math.sin(p / 255 * (math.pi + math.pi/4) - math.pi/8))
+
+    end
+end)
+
+
+
+
+for id, s in pairs(sounds) do
+    s:setPitch(0)
+    s:setVolume(0)
+    s:setDSP(132)
+    s:play()
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
