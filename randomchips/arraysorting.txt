@@ -1,10 +1,14 @@
 --@client
 --@include libs/task.txt
 local Task = require("libs/task.txt")
-
+--@superuser
 array = {}
 
-local count = 1024
+if player():getPos():getDistance(chip():getPos()) > 50 then
+    return 
+end
+
+local count = 16384
 local speed = 4096
 
 
@@ -17,7 +21,8 @@ INFO = {}
 local function swap(a, b)
 
     array[a], array[b] = array[b], array[a]
-    
+    Paint(a, array[a])
+    Paint(b, array[b])
     snd:setPitch((array[a] or 1) / count * 255)
     Task.yield(2)
 end
@@ -39,6 +44,8 @@ function quicksort(arr, low, high)
             Task.run(function() quicksort(arr, low, pivotIndex - 1) end),
             Task.run(function() quicksort(arr, pivotIndex + 1, high) end)
         }
+        //quicksort(arr, low, pivotIndex - 1)
+        //quicksort(arr, pivotIndex + 1, high)
         
     end
 end
@@ -188,7 +195,7 @@ function bitonicSortLined(arr)
 end
 
 local solve = async* function()
-    quicksort(array)
+    bubbleSort(array)
 end
 
 
@@ -196,45 +203,110 @@ local function random()
     for a = 1, count do
         local b = math.random(1, count)
         array[a], array[b] = array[b], array[a]
+        Paint(a, array[a])
+        Paint(b, array[b])
     end
     return true
 end
 
 local function fill()
     for i = 1, count do
+        //Paint(i, i)
         array[i] = i
     end
     return true
 end
+// 
+local done = nil
+local tbl = {}
+local mat = render.createMaterial("https://img3.goodfon.ru/original/1024x1024/2/96/lemur-sidit-otdyh.jpg", function(_,_,_,_,a) a(0,0,128,128) end, function(mat) 
+    
+    hook.add("renderoffscreen","getpixels", function()
+        render.selectRenderTarget("rt")
+        render.setMaterial(mat)
+        render.drawTexturedRect(0, 0, 1024, 1024)
+        render.capturePixels()
+        render.selectRenderTarget()
+        
+        for y = 0, 127 do
+            for x = 0, 127 do
+                table.insert(tbl, render.readPixel(x, y))
+            end
+        end
+        
 
+        Task.run(function()
+            
+            fill()
+            random()
+            Task.While(true)
+            _ = await* solve()
+            snd:stop()
 
-Task.run(function()
-    fill()
-    random()
-    Task.While(false)
-    _ = await* solve()
-    snd:stop()
-    print("STOP")
+            print("STOP")
+        
+        end)
+
+        hook.remove("renderoffscreen","getpixels")
+    end) 
 end)
 
+
 render.createRenderTarget("rt")
+local m = Matrix()
+local w = math.sqrt(count)
+m:setScale(Vector(1/w))
+local q = {}
+function Paint(id,clr)
+    table.insert(q, {id, clr})
+end
 hook.add("render","paint",function()
 
+--[[
     render.selectRenderTarget("rt")
     render.clear(Color(0,0,0,250))
-    for x = 1, 1023, div do
-        local h = array[x] or 0
-        render.setRGBA(255,255,255,255)
-        if INFO[x] then
-            render.setRGBA(0,255,0,255)
-        end
-        render.drawRectFast( x * div - 1, 1024 - h, div, h)
+    render.pushMatrix(m)
+    for ind = 0, count - 1 do
+        local clr = array[ind + 1] or 0
+        local x, y = ind % w, math.floor(ind / w)
+
+        render.setColor(Color(clr/count*360, 1, 1):hsvToRGB())
+
+        render.drawRectFast( x * 512, y * 512, 512, 512)
     end
+    render.popMatrix()
     render.selectRenderTarget()
+]]
     
     render.setRenderTargetTexture("rt")
     render.setFilterMag(1)
+    render.setRGBA(255,255,255,255)
     render.drawTexturedRect(0,0,512,512)
+end)
+
+hook.add("renderoffscreen","paint", function()
+    if #q <= 0 then
+        return
+    end
+    
+    render.selectRenderTarget("rt")
+    render.pushMatrix(m)
+    //for ind = 0, count - 1 do
+        //local clr = array[ind + 1] or 0
+        for _ = 1,1050 do
+            if #q <= 0 then
+                return
+            end
+            local ind, a = unpack(table.remove(q, 1))
+            local clr = tbl[a]
+            local x, y = (ind-1) % w, math.floor((ind-1) / w)
+            render.setColor(clr)
+            render.drawRectFast( x * 1024, y * 1024, 1024, 1024)
+        end
+    //end
+    render.popMatrix()
+    render.selectRenderTarget()
+
 end)
 
 
