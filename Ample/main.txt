@@ -1,0 +1,70 @@
+--@server
+--@includedir ample/ample/
+requiredir("ample/ample/")
+
+
+local CODE = [[
+
+
+/*
+b = 1
+fn a(b, c){
+    if (b < c){
+        
+        for(I=1;5;1){
+            b += 1
+            b += 1
+            continue
+        }
+        while(b < 5)
+            break
+        return (1 + 2 ) ^ 2
+    }else{
+        A = "A"
+        return A + 2
+    }
+    export A = x => return x + y
+    A = (x) => return x + y
+    A = x, y => return x + y
+    B = (x,y) => {
+        print("A" , "A")
+        return x + y
+    }
+
+}
+a = () => {
+    
+}
+print()
+
+*/
+class Name {
+    a = 1
+    b = 2
+    constructor(newa) {
+        a = newa
+    }
+    fn method(){
+        print("A")
+    }
+        
+
+}
+
+A = Name("A")
+]]
+
+
+local TOKENIZED = Tokenizer(CODE)
+local TOKENS = TOKENIZED.TOKENS
+//print(TOKENIZED)
+local Parsed = Parser(TOKENS)
+print("```"..tostring(Parsed).."```")
+local c,eff = loadstring(tostring(Parsed))
+if not c then
+    print(eff)
+else
+    c()
+
+    
+end
