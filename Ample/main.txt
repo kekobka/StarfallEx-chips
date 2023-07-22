@@ -39,19 +39,15 @@ print()
 
 */
 class Name {
-    a = 1
-    b = 2
+    get = x => return x + 1
+    
     constructor(newa) {
         a = newa
     }
-    fn method(){
-        print("A")
-    }
-        
-
+    
 }
 
-A = Name("A")
+export A = new Name("A")
 ]]
 
 
@@ -65,6 +61,6 @@ if not c then
     print(eff)
 else
     c()
-
+    print(A:method())
     
 end

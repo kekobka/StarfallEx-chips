@@ -126,7 +126,7 @@ function Tokenizer:tokenizeWord()
         return self:addToken(TOKENTYPES.FOR)
     elseif buff == "while" then
         return self:addToken(TOKENTYPES.WHILE)
-    elseif buff == "fn" then
+    elseif buff == "method" then
         return self:addToken(TOKENTYPES.FUNCTION)
     elseif buff == "return" then
         return self:addToken(TOKENTYPES.RETURN)
