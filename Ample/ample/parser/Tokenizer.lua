@@ -9,18 +9,25 @@ function Tokenizer:initialize(code)
     self.pos = 0
     self.length = code:len()
     self.TOKENS = {}
-    self:tokenize()
+    self._wait = {}
+    self:tokenize(self.length)
+    
 end
 function Tokenizer:__tostring()
     local ret = ""
-    for _, token in next, self.TOKENS do
-        ret = ret .. tostring(token) .. "\n"
+    for i, token in next, self.TOKENS do
+        ret = ret ..i.. ": " .. tostring(token) .. "\n"
     end
     return ret
 end
-function Tokenizer:tokenize()
-    while self.pos <= self.length do
+function Tokenizer:tokenize(what)
+    while self.pos <= what do
         local curr = self:peek(0)
+        if curr == self._wait.Who then
+            curr = self._wait.Old
+            self:addToken(self._wait.Type)
+            self._wait = {}
+        end
         if tonumber(curr) then
             self:tokenizeNumber()
         elseif curr == "." then
@@ -38,7 +45,6 @@ function Tokenizer:tokenize()
         else
             self:next()
         end
-
     end
 end
 
@@ -53,6 +59,11 @@ end
 function Tokenizer:next()
     self.pos = self.pos + 1
     return self:peek(0)
+end
+function Tokenizer:wait(old, who, type)
+    self._wait.Old = old
+    self._wait.Who = who
+    self._wait.Type = type
 end
 
 local TokenMeta = {
@@ -88,7 +99,8 @@ end
 
 function Tokenizer:tokenizeComment()
     local curr = self:peek(0)
-    while curr and not ("\r\n"):find(curr) do
+
+    while curr and curr ~= "\n" do
         curr = self:next()
     end
 end
@@ -143,7 +155,7 @@ function Tokenizer:tokenizeWord()
     elseif buff == "continue" then
         return self:addToken(TOKENTYPES.CONTINUE)
     end
-    
+
     self:addToken(TOKENTYPES.WORD, buff)
 end
 
@@ -171,7 +183,11 @@ function Tokenizer:tokenizeString()
             buff = buff .. '\\'
             goto CONTINUE
         end
-
+        if curr == "$" and self:peek(1) == "{" then
+            self:addToken(TOKENTYPES.FSTRING)
+            self:wait('"', "}", TOKENTYPES.RBR)
+            break
+        end
         if curr == '"' or curr == "'" then
             break
         end
@@ -191,6 +207,7 @@ function Tokenizer:tokenizeOperator()
             self:next()
             self:next()
             self:tokenizeComment()
+
             return
         elseif self:peek(1) == "*" then
             self:next()

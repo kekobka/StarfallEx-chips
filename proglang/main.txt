@@ -16,11 +16,7 @@ local Lexer = require("./parser/lexer.lua")
 local Parser = require("./parser/parser.lua")
 
 CODE = [[
-number s = 1
-fn test() {
-    s++
-}
-test()
+number s = 1*1
 print(s)
 ]]
 

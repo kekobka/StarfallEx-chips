@@ -59,4 +59,6 @@ TOKENTYPES = {
     CLASSCONSTRUCTOR = 46, -- constructor
     CLASSNEW = 47, -- new
     POINT = 48, -- .
+    FSTRING = 49,
+    POINTER = 50,
 }

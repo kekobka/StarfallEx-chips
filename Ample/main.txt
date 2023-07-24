@@ -1,14 +1,14 @@
---@server
+--@client
 --@includedir ample/ample/
 requiredir("ample/ample/")
 
 
 local CODE = [[
-
-
 /*
+
+
 b = 1
-fn a(b, c){
+method a(b, c){
     if (b < c){
         
         for(I=1;5;1){
@@ -23,7 +23,6 @@ fn a(b, c){
         A = "A"
         return A + 2
     }
-    export A = x => return x + y
     A = (x) => return x + y
     A = x, y => return x + y
     B = (x,y) => {
@@ -32,35 +31,53 @@ fn a(b, c){
     }
 
 }
-a = () => {
-    
+b = () => {
+    return a(0,1)
 }
-print()
-
+print(b())
 */
+
 class Name {
-    get = x => return x + 1
-    
-    constructor(newa) {
-        a = newa
+    constructor(name) {
+        name = name
     }
-    
+
+    GetName()  {
+        return "my name is ${self.name}!"
+    }
+    SetName(name) {
+        print("teper ya ${name}")
+        self.name = name
+    }
+
 }
 
-export A = new Name("A")
+export A = new Name("tupoy")
+print(A->GetName())
+A->SetName("ymniy")
+//print(A->GetName())
+sperma = "arahix"
+//zopa = "terra"
+//print("sperma eto ${sperma} v ${zopa} esss")
+
+
 ]]
+
+
 
 
 local TOKENIZED = Tokenizer(CODE)
 local TOKENS = TOKENIZED.TOKENS
 //print(TOKENIZED)
 local Parsed = Parser(TOKENS)
+
 print("```"..tostring(Parsed).."```")
 local c,eff = loadstring(tostring(Parsed))
 if not c then
     print(eff)
 else
     c()
-    print(A:method())
-    
+
 end
+
+

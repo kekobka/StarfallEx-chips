@@ -36,9 +36,10 @@ OPERATOR_CHARS = {
     ["/="] = TOKENTYPES.SLASHEQ,
     ["*="] = TOKENTYPES.STAREQ,
     ["^="] = TOKENTYPES.FLEXEQ,
-
+    
+    ["->"] = TOKENTYPES.POINTER,
     ["=>"] = TOKENTYPES.LAMBDA,
 
-    [";"] = TOKENTYPES.ENDBLOCK
+    [";"] = TOKENTYPES.ENDBLOCK,
 
 }
