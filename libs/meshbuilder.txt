@@ -41,9 +41,11 @@ function MeshBuilder:initialize(link, d)
     end)
 end
 if SERVER then
+    local color_white = Color(255,255,255,255)
     function MeshBuilder:build(name, pos, ang, scale, parent, relativeTo, color, mat)
         local rto = relativeTo or parent
         local holo = hologram.create(rto and rto:localToWorld(pos) or pos, rto and rto:localToWorldAngles(ang) or ang, "models/starfall/holograms/box.mdl", scale)
+        holo:setColor(color or color_white)
         if parent then
             holo:setParent(parent)
         end
@@ -238,6 +240,7 @@ else
                     
                     v.holo:setRenderBounds(Vector(-200), Vector(200))
                     v.holo:setMesh(self.meshData[name])
+                    v.holo:setColor(color)
                     local mat = v.mat
                     v.mat = self:_createMaterial(mat.shader, mat.basetexture, mat.bumpmap, mat.options)
                     if v.mat then v.holo:setMeshMaterial(v.mat) end
