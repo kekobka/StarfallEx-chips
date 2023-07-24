@@ -63,10 +63,12 @@ function Task.all(tasks)
     end
     return unpack(ret)
 end
-
+TaskAll = Task.all
 function Task.sleep(ms)
     coroutine.wait(ms/1000)
 end
+
+sleep = Task.sleep
 
 function Task.yield()
     coroutine.yield()
@@ -75,6 +77,7 @@ end
 function Task:th(fn)
     self.thenfn = fn
 end
+
 function Task.While(bool)
     local temp = While
     While = bool
@@ -99,7 +102,7 @@ Task.wait = Task.await
 
 await = setmetatable({},{
     __mul = function(_,task)
-        assert(istable(task) and task:isInstanceOf(Task), "await for Task only")
+        -- assert(istable(task) and task:isInstanceOf(Task), "await for Task only")
         return task:await()
     end,
     __tostring = function()
@@ -121,29 +124,31 @@ async = setmetatable({},{
     __tostring = function()
         return "async function"
     end})
+if not http.isAsync then
     
-local http_ = table.copy(http)
-
-http.get = async* function(url, headers)
-
-    local ret
-    http_.get(url, function(...) ret = {...} end, function(...) ret = {...} end, headers)
-    while not ret do
-        Task.yield()
+    local http_ = table.copy(http)
+    
+    http.get = async* function(url, headers)
+    
+        local ret
+        http_.get(url, function(...) ret = {...} end, function(...) ret = {...} end, headers)
+        while not ret do
+            Task.yield()
+        end
+        return unpack(ret)
     end
-    return unpack(ret)
-end
-
-http.post = async* function(url, payload, headers)
-
-    local ret
-    http_.post(url, payload, function(...) ret = {...} end, function(...) ret = {...} end, headers)
-    while not ret do
-        Task.yield()
+    
+    http.post = async* function(url, payload, headers)
+    
+        local ret
+        http_.post(url, payload, function(...) ret = {...} end, function(...) ret = {...} end, headers)
+        while not ret do
+            Task.yield()
+        end
+        return unpack(ret)
     end
-    return unpack(ret)
+    http.isAsync = true
 end
-
 
     
 if CLIENT then
