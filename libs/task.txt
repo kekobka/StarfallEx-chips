@@ -152,21 +152,22 @@ end
 
     
 if CLIENT then
+    if not bass.isAsync then
+        bass.isAsync = true
+        local bass_ = table.copy(bass)
     
-    local bass_ = table.copy(bass)
-
-    bass.loadURL = async* function(path, flags)
-    
-        local ret
+        bass.loadURL = async* function(path, flags)
         
-        bass_.loadURL(path, flags, function(...) ret = {...} end)
+            local ret
             
-        while not ret do
-            Task.yield()
+            bass_.loadURL(path, flags, function(...) ret = {...} end)
+                
+            while not ret do
+                Task.yield()
+            end
+            return unpack(ret)
         end
-        return unpack(ret)
     end
-
 end
 
 return Task

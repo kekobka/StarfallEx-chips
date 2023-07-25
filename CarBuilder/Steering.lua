@@ -2,9 +2,8 @@
 local Steering = class("Steering")
 
 local noInputCorrMul = 0.8
-local inputCorrMul = 0.5
+local inputCorrMul = 0.7
 
-local velLerpMultiplier = 0.07
 local SATMultiplier = 1
 local maxSATForce = 15
 
@@ -30,16 +29,17 @@ function Steering:initialize(car, body, axles, data)
             local keyA = driver:keyDown(IN_KEY.MOVELEFT)
             local keyD = driver:keyDown(IN_KEY.MOVERIGHT)
             isInputActive = keyA or keyD
-            
-            self.steerAng = math.lerp(0.15, self.steerAng, (keyA and 1 or 0) - (keyD and 1 or 0))
+            self.steerang = self.steerang + (keyA and 1 or 0) - (keyD and 1 or 0)
+            -- self.steerAng = math.lerp(0.15, self.steerAng, (keyA and 2 or 0) - (keyD and 2 or 0))
         end
-        self.steerang = self.steerang + self.steerAng
+        -- self.steerang = self.steerang + self.steerAng
         local correction = correction * (isInputActive and inputCorrMul or noInputCorrMul)
         local correction = correction ~= correction and 0 or correction
         self.steerang = self.steerang - correction
         
         self.steerang = math.clamp(self.steerang, -self.lock, self.lock)
         local ang = self.steerang
+        local velL = self.car.body:getLocalVelocity():getLength()
         for id, axle in next, axles do
 
             axle.right:setFrozen(true)
@@ -48,12 +48,19 @@ function Steering:initialize(car, body, axles, data)
             local camber = axle.camber or self.camber
             local accerman = axle.accerman or self.accerman
             if axle.steer then
-                
                 axle.right:setAngles(body:localToWorldAngles(Angle(camber + (ang / 90 * caster), ang + math.sin(math.rad(ang)) ^2 * accerman, 0)))
                 axle.left:setAngles(body:localToWorldAngles(Angle(-camber + (ang / 90 * caster), ang + math.sin(math.rad(ang)) ^2 * accerman, 0 )))
+                if velL > 360 then
+                    axle.rightw:applyForceCenter(axle.rightw:getRight() * axle.rightw:getMass() * 5) 
+                    axle.leftw:applyForceCenter(axle.leftw:getRight() * axle.leftw:getMass() * 5) 
+                end
             else
                 axle.right:setAngles(body:localToWorldAngles(Angle(camber, 0, 0 )))
                 axle.left:setAngles(body:localToWorldAngles(Angle(-camber, 0, 0 )))
+                if velL > 360 then
+                    axle.rightw:applyForceCenter(axle.rightw:getRight() * axle.rightw:getMass() * 4) 
+                    axle.leftw:applyForceCenter(axle.leftw:getRight() * axle.leftw:getMass() * 4) 
+                end
             end
         end
     end)
@@ -69,7 +76,7 @@ function Steering:getSteerAngle()
 end
 
 local KG_TO_N = 1 / 9.80
-local SATCurve = { Vector(0, 0.01), Vector(0.05, 1.5), Vector(0.15, 0.1), Vector(0.2, -0.3) }
+local SATCurve = { Vector(0, 0.01), Vector(0.05, 1.1), Vector(0.15, 0.1), Vector(0.2, -0.3) }
 local pow = math.pow
 local function cubic(points, t)
     return Vector(
