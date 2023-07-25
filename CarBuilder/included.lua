@@ -9,6 +9,10 @@ if SERVER then
     --@include ./Steering.lua
     Steering = require("./Steering.lua")
 
+else
+    --@include ./Camera.lua
+    Camera = require("./Camera.lua")
+
 end
 local color_white = Color(255, 255, 255, 255)
 
