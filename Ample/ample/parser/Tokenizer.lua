@@ -34,10 +34,10 @@ function Tokenizer:tokenize(what)
             self:addToken(TOKENTYPES.POINT)
             self:next()
         elseif curr == ";" then
-            self:addToken(TOKENTYPES.ENDBLOCK)
+            -- self:addToken(TOKENTYPES.ENDBLOCK)
             self:next()
-        elseif curr == '"' or curr == "'" then
-            self:tokenizeString()
+        elseif curr == '"' or curr == "'" or curr == "`" then
+            self:tokenizeString(curr)
         elseif OPERATOR_CHARS[curr] then
             self:tokenizeOperator()
         elseif string.isLetter(curr) then
@@ -138,7 +138,7 @@ function Tokenizer:tokenizeWord()
         return self:addToken(TOKENTYPES.FOR)
     elseif buff == "while" then
         return self:addToken(TOKENTYPES.WHILE)
-    elseif buff == "method" then
+    elseif buff == "fn" then
         return self:addToken(TOKENTYPES.FUNCTION)
     elseif buff == "return" then
         return self:addToken(TOKENTYPES.RETURN)
@@ -148,18 +148,22 @@ function Tokenizer:tokenizeWord()
         return self:addToken(TOKENTYPES.BREAK)
     elseif buff == "class" then
         return self:addToken(TOKENTYPES.CLASSDEF)
+    elseif buff == "extends" then
+        return self:addToken(TOKENTYPES.EXTENDS)
     elseif buff == "constructor" then
         return self:addToken(TOKENTYPES.CLASSCONSTRUCTOR)
     elseif buff == "new" then
         return self:addToken(TOKENTYPES.CLASSNEW)
+    elseif buff == "this" then
+        return self:addToken(TOKENTYPES.THIS)
     elseif buff == "continue" then
         return self:addToken(TOKENTYPES.CONTINUE)
     end
-
+    
     self:addToken(TOKENTYPES.WORD, buff)
 end
 
-function Tokenizer:tokenizeString()
+function Tokenizer:tokenizeString(startstr)
 
     local buff = ""
     local curr = self:next()
@@ -167,7 +171,7 @@ function Tokenizer:tokenizeString()
 
         if curr == '\\' then
             curr = self:next()
-            if curr == '"' then
+            if curr == startstr then
                 buff = buff .. curr
                 curr = self:next()
                 goto CONTINUE
@@ -185,10 +189,10 @@ function Tokenizer:tokenizeString()
         end
         if curr == "$" and self:peek(1) == "{" then
             self:addToken(TOKENTYPES.FSTRING)
-            self:wait('"', "}", TOKENTYPES.RBR)
+            self:wait(startstr, "}", TOKENTYPES.RBR)
             break
         end
-        if curr == '"' or curr == "'" then
+        if curr == startstr then
             break
         end
         buff = buff .. curr

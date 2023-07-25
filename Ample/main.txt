@@ -1,68 +1,9 @@
 --@client
 --@includedir ample/ample/
 requiredir("ample/ample/")
+--@owneronly
 
-
-local CODE = [[
-/*
-
-
-b = 1
-method a(b, c){
-    if (b < c){
-        
-        for(I=1;5;1){
-            b += 1
-            b += 1
-            continue
-        }
-        while(b < 5)
-            break
-        return (1 + 2 ) ^ 2
-    }else{
-        A = "A"
-        return A + 2
-    }
-    A = (x) => return x + y
-    A = x, y => return x + y
-    B = (x,y) => {
-        print("A" , "A")
-        return x + y
-    }
-
-}
-b = () => {
-    return a(0,1)
-}
-print(b())
-*/
-
-class Name {
-    constructor(name) {
-        name = name
-    }
-
-    GetName()  {
-        return "my name is ${self.name}!"
-    }
-    SetName(name) {
-        print("teper ya ${name}")
-        self.name = name
-    }
-
-}
-
-export A = new Name("tupoy")
-print(A->GetName())
-A->SetName("ymniy")
-//print(A->GetName())
-sperma = "arahix"
-//zopa = "terra"
-//print("sperma eto ${sperma} v ${zopa} esss")
-
-
-]]
-
+local CODE = file.read("Ample.js")
 
 
 
@@ -79,5 +20,3 @@ else
     c()
 
 end
-
-

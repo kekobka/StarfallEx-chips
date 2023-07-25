@@ -5,19 +5,23 @@ local NwSTACK = 0
 local function GetStack(offset)
     return ("\t"):rep(NwSTACK + (offset or 0))
 end
-
+local TokenMeta = {
+    __tostring = function(self)
+        return ParseToken(self[1]) .. " " .. tostring(self[2] or "")
+    end
+}
 function Parser:initialize(tokens)
     self.TOKENS = tokens
     self.pos = 1
     self.length = table.count(self.TOKENS)
 
-    self.EOF = {TOKENTYPES.EOF}
+    self.EOF = setmetatable({TOKENTYPES.EOF},TokenMeta)
     self.PARSED = self:parse()
 end
 function Parser:__tostring()
     local ret = ""
     for _, token in next, self.PARSED do
-        ret = ret .. tostring(token) .. ";\n"
+        ret = ret .. tostring(token) ..  (token:endsWith(";") and "" or ";\n")
     end
     return ret
 end
@@ -57,7 +61,7 @@ function Parser:consume(type)
     return curr
 end
 
-function Parser:statement(EXPORT, Relative)
+function Parser:statement(EXPORT)
 
     if self:match(TOKENTYPES.IF) then
         return self:_IfElse()
@@ -74,15 +78,22 @@ function Parser:statement(EXPORT, Relative)
     if self:match(TOKENTYPES.CONTINUE) then
         return "continue"
     end
+    if self:match(TOKENTYPES.THIS) then
+        if self:match(TOKENTYPES.POINT) then
+            return "self.".. self:statement(true)
+        else
+            return "self"
+        end
+    end
+    
     if self:match(TOKENTYPES.RETURN) then
-
         return "return " .. self:expression()
     end
     if self:match(TOKENTYPES.FSTRING) then
         return self:expression()
     end
     if self:match(TOKENTYPES.FUNCTION) then
-        return self:_FunctionDefine(EXPORT, Relative), TOKENTYPES.EQ
+        return self:_FunctionDefine(EXPORT), TOKENTYPES.EQ
     end
     if self:match(TOKENTYPES.CLASSDEF) then
         return self:_ClassDefine(EXPORT)
@@ -90,11 +101,16 @@ function Parser:statement(EXPORT, Relative)
     if self:get(0)[1] == TOKENTYPES.WORD and self:get(1)[1] == TOKENTYPES.LBRACKET then
         return self:_NewFunction(EXPORT)
     end
+    if self:get(0)[1] == TOKENTYPES.WORD and self:get(1)[1] == TOKENTYPES.POINT then
+        local word = self:consume(TOKENTYPES.WORD)[2]
+        self:consume(TOKENTYPES.POINT)
+        return tostring(word).."."..self:statement(true)
+    end
     if self:match(TOKENTYPES.EXPORT) then
         return self:statement(true)
     end
     if self:match(TOKENTYPES.CLASSCONSTRUCTOR) then
-        return self:_NewConstructorDefine(EXPORT, Relative), TOKENTYPES.CLASSCONSTRUCTOR
+        return self:_NewConstructorDefine(EXPORT), TOKENTYPES.CLASSCONSTRUCTOR
     end
 
     return self:AssignmentStatement(nil, EXPORT)
@@ -124,7 +140,7 @@ local ConstructorDefinemeta = {
     __tostring = function(self)
         local ret = "\n"
         for _, token in next, self do
-            ret = ret .. GetStack(1) .. "self." .. tostring(token) .. ";\n"
+            ret = ret .. GetStack(1) .. tostring(token) ..  (token:endsWith(";") and "" or ";\n")
         end
         return ret
     end
@@ -141,7 +157,7 @@ function Parser:_NewConstructorDefine(EXPORT, Relative)
         self:match(TOKENTYPES.COMMA)
     end
 
-    local body = self:stateOrBlock(EXPORT, Relative)
+    local body = self:stateOrBlock()
     body = setmetatable(body, ConstructorDefinemeta)
     local res = "__init = function " .. "( self, " .. table.concat(argNames, ", ") .. " )\n" .. tostring(body) .. GetStack() .. "end"
     VARIABLESPOP()
@@ -160,7 +176,7 @@ local blockmeta = {
     __tostring = function(self)
         local ret = "\n"
         for _, token in next, self do
-            ret = ret .. GetStack(1) .. tostring(token) .. ";\n"
+            ret = ret .. GetStack(1) .. tostring(token) ..  (token:endsWith(";") and "" or ";\n")
         end
         return ret
     end
@@ -173,6 +189,10 @@ function Parser:_ClassDefine(EXPORT)
     NwSTACK = NwSTACK + 1
     local constructor = "__init = function() end"
     VARIABLESPUSH()
+    local extends
+    if self:match(TOKENTYPES.EXTENDS) then
+        extends = self:consume(TOKENTYPES.WORD)
+    end
     self:consume(TOKENTYPES.LBR)
     while not self:match(TOKENTYPES.RBR) do
         local a, isValue = self:statement(true, true)
@@ -287,8 +307,8 @@ function Parser:AssignmentStatement(force, EXPORT)
             return self:ParseAssignment(TOKENTYPES.STAREQ, var, expr, type, init)
 
         elseif self:match(TOKENTYPES.POINTER) then
-
             local expr, type = self:expression(var)
+
             return self:ParseAssignment(TOKENTYPES.POINTER, var, expr, type, init)
             -- return ":".. self:expression(), TOKENTYPES.POINTER
 
@@ -318,9 +338,8 @@ function Parser:AssignmentStatement(force, EXPORT)
 
         return var
     elseif self:match(TOKENTYPES.ENDBLOCK) then
-        return ";"
+        return ""
     elseif self:match(TOKENTYPES.LBRACKET) then
-        print("A")
         local exp, type = self:expression()
 
         self:match(TOKENTYPES.RBRACKET)
@@ -399,7 +418,7 @@ function Parser:ParseAssignment(type, name, what, type2, init, export)
         checkOnInit(init)
         -- checkOnNumber(type2)
         local name = tostring(name)
-        return name .. ":" .. what
+        return name .. "." .. what
     end
 end
 
@@ -575,11 +594,12 @@ function Parser:_Sredne(var)
         local expr, type = self:_Unary(var)
         return "-" .. tostring(expr), type
     elseif self:match(TOKENTYPES.POINTER) then
-
-        return tostring(expr) .. ":" .. self:expression()
+        local expr2, type = self:_Unary(var)
+        return tostring(expr) .. ":" .. expr2, TOKENTYPES.POINTER
 
     elseif self:match(TOKENTYPES.POINT) then
-        return tostring(expr) .. "." .. self:expression(), TOKENTYPES.POINT
+
+        return tostring(expr) .. "." .. self:_Unary(var), TOKENTYPES.POINT
 
     end
     return expr, type
@@ -596,6 +616,7 @@ function Parser:_Unary(var)
     end
     return self:_Primary(var)
 end
+
 function Parser:getFString(left, center)
     local fstring = '"' .. tostring(left) .. '"..' .. center
 
@@ -616,10 +637,23 @@ function Parser:getFString(left, center)
     end
     return fstring
 end
+
+local tablemeta = {
+    __tostring = function(self)
+        local ret = "{\n"
+        for _, token in next, self do
+            ret = ret .. GetStack(1) .. tostring(token) ..  (token:endsWith(";") and "" or ";\n")
+        end
+        return ret .. GetStack(1) .. "}"
+    end
+}
+
+
+
 function Parser:_Primary(var)
 
     local curr = self:get(0)
-
+    
     if self:match(TOKENTYPES.NUMBER) then
         if var then
             VARIABLES[var] = TOKENTYPES.NUMBER
@@ -632,11 +666,6 @@ function Parser:_Primary(var)
 
     elseif self:match(TOKENTYPES.FSTRING) then
 
-        -- local expr2,type2 = self:statement(true)
-        -- while not self:get(0)[1] == TOKENTYPES.STRING do
-        --     self:next()
-        -- end
-
         local left = self:consume(TOKENTYPES.STRING)[2]
         self:consume(TOKENTYPES.LBR)
         local center = self:statement(true)
@@ -648,7 +677,6 @@ function Parser:_Primary(var)
             local right = self:consume(TOKENTYPES.STRING)[2]
             ret = '"' .. tostring(left) .. '"..' .. center .. '.."' .. tostring(right) .. '"'
         end
-        -- print(self:get(0))
         return ret, TOKENTYPES.FSTRING
 
     elseif self:match(TOKENTYPES.CLASSNEW) then
@@ -659,6 +687,12 @@ function Parser:_Primary(var)
 
         -- return NumberExpression(tonumber("0x" .. curr.text), v)
 
+    elseif self:match(TOKENTYPES.THIS) then
+        if self:match(TOKENTYPES.POINT) then
+            return "self.".. self:statement(true)
+        else
+            return "self"
+        end
     elseif self:match(TOKENTYPES.WORD) then
 
         if self:match(TOKENTYPES.LAMBDA) then
@@ -678,7 +712,22 @@ function Parser:_Primary(var)
 
     elseif self:match(TOKENTYPES.ENDBLOCK) then
 
-        return "; ", TOKENTYPES.ENDBLOCK
+        return " ", TOKENTYPES.ENDBLOCK
+
+    elseif self:match(TOKENTYPES.OPENTBL) then
+
+        
+
+        local block = {}
+        NwSTACK = NwSTACK + 1
+        VARIABLESPUSH()
+        while not self:match(TOKENTYPES.CLOSETBL) do
+            local s = self:expression()
+            table.insert(block, s)
+        end
+        VARIABLESPOP()
+        NwSTACK = NwSTACK - 1
+        return setmetatable(block, tablemeta)
 
     elseif self:match(TOKENTYPES.LBRACKET) then
         local r = ""
@@ -695,7 +744,6 @@ function Parser:_Primary(var)
         end
         return "( " .. r .. " )", type
     end
-
     return throw("Unknown expression " .. self.pos .. ": " .. tostring(curr))
 end
 
@@ -703,7 +751,7 @@ function Parser:_NewFunction(EXPORT)
 
     local name = self:consume(TOKENTYPES.WORD)[2]
     self:consume(TOKENTYPES.LBRACKET)
-
+    
     local args = {}
     while not self:match(TOKENTYPES.RBRACKET) do
         local e = self:expression()
@@ -712,11 +760,12 @@ function Parser:_NewFunction(EXPORT)
     end
 
     if self:get(0)[1] == TOKENTYPES.LBR then
-
+        
         local body = self:stateOrBlock()
         table.insert(args, 1, "self")
         return (not EXPORT and "local " or "") .. tostring(name) .. " = function " .. "( " .. table.concat(args, ", ") .. " )\n" .. tostring(body) .. GetStack() .. "end", TOKENTYPES.EQ
     end
+    
     return tostring(name) .. "( " .. table.concat(args, ", ") .. " )"
 end
 

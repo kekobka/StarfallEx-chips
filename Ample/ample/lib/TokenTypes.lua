@@ -61,4 +61,8 @@ TOKENTYPES = {
     POINT = 48, -- .
     FSTRING = 49,
     POINTER = 50,
+    EXTENDS = 51,
+    THIS = 52,
+    OPENTBL = 53,
+    CLOSETBL = 54,
 }

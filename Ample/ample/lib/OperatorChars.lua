@@ -9,6 +9,8 @@ OPERATOR_CHARS = {
     ["^"] = TOKENTYPES.FLEX,
     ["%"] = TOKENTYPES.MODULE,
 
+    ["["] = TOKENTYPES.OPENTBL,
+    ["]"] = TOKENTYPES.CLOSETBL,
     ["("] = TOKENTYPES.LBRACKET,
     [")"] = TOKENTYPES.RBRACKET,
     ["{"] = TOKENTYPES.LBR,
