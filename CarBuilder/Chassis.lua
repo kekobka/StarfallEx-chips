@@ -53,14 +53,14 @@ function Chassis:getDriver()
     return isValid(self.driverchair) and self.driverchair:getDriver() or nil
 end
 
-Chassis.createWheel = async * function(self, pos, ang)
+Chassis.createWheel = async* function(self, pos, ang)
     while not prop.canSpawn() do
         sleep(250)
     end
 
     local wheel = prop.create(self.base:localToWorld(pos), ang, "models/sprops/trans/wheel_d/t_wheel25.mdl", true)
     constraint.nocollide(wheel, self.base)
-    wheel:setMass(68)
+    wheel:setMass(80)
     wheel:enableSphere(true)
     wheel:setInertia(Vector(6, 5, 6))
     wheel:getPhysicsObject():setMaterial("jeeptire")
@@ -82,7 +82,7 @@ Chassis.createWheel = async * function(self, pos, ang)
 
     return wheel, plate
 end
-Chassis.createSuspension = async * function(self, wheel, plate)
+Chassis.createSuspension = async* function(self, wheel, plate)
 
     constraint.elastic(1, wheel, self.base, 0, 0, Vector(0, 0, 0), self.base:worldToLocal(wheel:localToWorld(Vector(0, 0, self.suspensiontravel))), 42000, 1000, 1200, DEBUG and 1, false)
 
@@ -96,8 +96,8 @@ Chassis.createSuspension = async * function(self, wheel, plate)
 
 end
 
-Chassis.createAxle = async * function(self, pos, ang)
-    local right, left = TaskAll {self:createWheel(pos, ang), self:createWheel(pos:clone():setX(-pos.x), -ang)}
+Chassis.createAxle = async* function(self, pos, ang)
+    local right, left = TaskAll {self:createWheel(pos:clone():setX(-pos.x), -ang), self:createWheel(pos, ang)}
     self:createSuspension(unpack(right))
     self:createSuspension(unpack(left))
     right[1]:setFrozen(false)
@@ -109,7 +109,7 @@ Chassis.createAxle = async * function(self, pos, ang)
         leftw = left[1]
     }
 end
-Chassis.createSeat = async * function(self, pos, ang)
+Chassis.createSeat = async* function(self, pos, ang)
     while not prop.canSpawn() do
         sleep(250)
     end
