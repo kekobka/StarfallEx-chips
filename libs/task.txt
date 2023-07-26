@@ -194,8 +194,7 @@ if not TASKINITIALIZED then
             while not prop_.canSpawn() do
                 Task.sleep(200)
             end
-            local p = prop_.createCustom(...)
-            return p
+            return prop_.createCustom(...)
             
         end
     end
