@@ -138,7 +138,7 @@ function Tokenizer:tokenizeWord()
         return self:addToken(TOKENTYPES.FOR)
     elseif buff == "while" then
         return self:addToken(TOKENTYPES.WHILE)
-    elseif buff == "fn" then
+    elseif buff == "function" then
         return self:addToken(TOKENTYPES.FUNCTION)
     elseif buff == "return" then
         return self:addToken(TOKENTYPES.RETURN)
@@ -156,6 +156,10 @@ function Tokenizer:tokenizeWord()
         return self:addToken(TOKENTYPES.CLASSNEW)
     elseif buff == "this" then
         return self:addToken(TOKENTYPES.THIS)
+    elseif buff == "async" then
+        return self:addToken(TOKENTYPES.ASYNC)
+    elseif buff == "await" then
+        return self:addToken(TOKENTYPES.AWAIT)
     elseif buff == "continue" then
         return self:addToken(TOKENTYPES.CONTINUE)
     end

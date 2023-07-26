@@ -65,4 +65,6 @@ TOKENTYPES = {
     THIS = 52,
     OPENTBL = 53,
     CLOSETBL = 54,
+    ASYNC = 55,
+    AWAIT = 56,
 }

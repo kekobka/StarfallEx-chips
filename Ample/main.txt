@@ -1,22 +1,33 @@
---@client
+
 --@includedir ample/ample/
 requiredir("ample/ample/")
+--@include libs/Task.txt
+require("libs/Task.txt")
 --@owneronly
-
-local CODE = file.read("Ample.js")
-
-
-
-local TOKENIZED = Tokenizer(CODE)
-local TOKENS = TOKENIZED.TOKENS
-//print(TOKENIZED)
-local Parsed = Parser(TOKENS)
-
-print("```"..tostring(Parsed).."```")
-local c,eff = loadstring(tostring(Parsed))
-if not c then
-    print(eff)
+if SERVER then
+    
+    net.receive("CUM",function()
+        local CODE = net.readString()
+        
+        
+        
+        local TOKENIZED = Tokenizer(CODE)
+        local TOKENS = TOKENIZED.TOKENS
+        //print(TOKENIZED)
+        local Parsed = Parser(TOKENS)
+        
+        print("```"..tostring(Parsed).."```")
+        local c,eff = loadstring(tostring(Parsed))
+        if not c then
+            print(eff)
+        else
+            c()
+        
+        end
+    end)
 else
-    c()
-
+    
+    net.start("CUM")
+    net.writeString(file.read("Ample.js"))
+    net.send()
 end

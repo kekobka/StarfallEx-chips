@@ -1,8 +1,8 @@
 -- втф чо асинхронность в гмоде 
 -- ОСТОРОЖНО ОНО ЛОМАЕТ http.get И bass.loadURL функции превращая их в асинхронные
-
-local Task = class("Task")
-
+if not Task then
+Task = class("Task")
+end
 local function canProcess()
     return math.max(cpuTotalAverage(), cpuTotalUsed()/4) < cpuMax() * 0.7
 end
