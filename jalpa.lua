@@ -7,7 +7,7 @@ if SERVER then
     chip():setDrawShadow(false)
     Steerholo = hologram.create(chip():localToWorld(Vector(15.1382, 12.4933, -25 + 3.03781)), chip():localToWorldAngles(Angle(0, 90, 23.30 - 90)), "models/holograms/cube.mdl", Vector(0.1))
 end
-DEBUG = true
+DEBUG = false
 
 local Jalpa = CarBuilder {
     obj = "https://raw.githubusercontent.com/kekobka/valera/main/jalpa.obj",
@@ -18,28 +18,26 @@ local Jalpa = CarBuilder {
     },
     transmission = {
         engine = {
-            maxRPM = 7000,
-            maxTorque = 500
+            maxRPM = 8000,
+            maxTorque = 300
         },
         gearbox = {
             type = 'MANUAL',
             shiftDuration = 0.2,
             shiftSmoothness = 0.3,
-            ratios = {3.321, 1.902, 1.308, 1, 0.838},
+            ratios = {2.621, 1.902, 1.308, 1, 0.838},
             reverse = 3.382,
             axles = {{
-                power = 0.96,
-                coast = 0.96,
-                preload = 10,
-                usePowerBias = 1,
-                viscousCoeff = 0.96,
-                distributionCoeff = 1,
+                distributionCoeff = 0.7,
+                finalDrive = 3.3
+            },{
+                distributionCoeff = 0.3,
                 finalDrive = 3.3
             }},
             clutch = {
                 stiffness = 7,
                 damping = 0.5,
-                maxTorque = 2000
+                maxTorque = 10000
             }
         }
 
