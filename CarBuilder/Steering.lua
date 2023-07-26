@@ -1,11 +1,11 @@
 --@server
 local Steering = class("Steering")
 
-local noInputCorrMul = 0.8
-local inputCorrMul = 0.7
+local noInputCorrMul = 0.7
+local inputCorrMul = 0.3
 
 local SATMultiplier = 1
-local maxSATForce = 15
+local maxSATForce = 30
 
 function Steering:initialize(car, body, axles, data)
     self.car = car
@@ -76,18 +76,17 @@ function Steering:getSteerAngle()
 end
 
 local KG_TO_N = 1 / 9.80
-local SATCurve = { Vector(0, 0.01), Vector(0.05, 1.1), Vector(0.15, 0.1), Vector(0.2, -0.3) }
+
+local SATCurve = { 0.03, 1.5, 0.1, -0.3 }
 local pow = math.pow
+
 local function cubic(points, t)
-    return Vector(
-        (pow(1 - t, 3) * points[1].x) + (3 * pow(1 - t, 2) * t * points[2].x) + (3 * (1 - t) * pow(t, 2) * points[3].x) + (pow(t, 3) * points[4].x),
-        (pow(1 - t, 3) * points[1].y) + (3 * pow(1 - t, 2) * t * points[2].y) + (3 * (1 - t) * pow(t, 2) * points[3].y) + (pow(t, 3) * points[4].y)
-    )
+    return (pow(1 - t, 3) * points[1]) + (3 * pow(1 - t, 2) * t * points[2]) + (3 * (1 - t) * pow(t, 2) * points[3]) + (pow(t, 3) * points[4])
 end
 
 local function evalSATCurve(slip)
     local tDiff = math.abs(slip) / 90
-    return cubic(SATCurve, tDiff).y * math.sign(slip)
+    return cubic(SATCurve, tDiff) * math.sign(slip)
 end
 
 local function getWheelSlip(base, slave, axle)
@@ -108,7 +107,7 @@ function Steering:getWheelFrictionForce(base, wheel, slave, axle)
     local load = physObj:getStress() / KG_TO_N
     local inertia = physObj:getInertia():getLength()
     local friction = wheel:getFriction()
-    -- local mechanicalTrail = wheel:getModelRadius() / 39.37 * 2 * math.pi * (caster or self.caster)
+    -- local mechanicalTrail = wheel:getModelRadius() / 39.37 * 2 * math.pi  --* self.caster
     local factor = math.clamp(load * friction, -maxSATForce, maxSATForce)
     local sidewaysFriction = factor * evalSATCurve(slip)
     
@@ -130,7 +129,7 @@ function Steering:getCorrection()
         local wheelLeftFrictionForce = self:getWheelFrictionForce(self.body, leftwheel, leftplate, axle)
         local wheelRightFrictionForce = self:getWheelFrictionForce(self.body, rightwheel, rightplate, axle)
 
-        totalFrictionForce = totalFrictionForce + wheelLeftFrictionForce + wheelRightFrictionForce
+        totalFrictionForce = totalFrictionForce + (wheelLeftFrictionForce + wheelRightFrictionForce) / 2
         ::CONTINUE::
     end
     

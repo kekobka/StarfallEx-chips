@@ -1,4 +1,6 @@
 local Clutch = class('Clutch')
+local RPM_TO_RAD = 0.10472
+
 
 function Clutch:initialize(data, gearbox, engine)
     self.stiffness = data.stiffness or 7
@@ -13,7 +15,7 @@ function Clutch:initialize(data, gearbox, engine)
     self.engine = engine
     self.gearbox = gearbox
 end
-local RPM_TO_RAD = 0.10472
+
 
 function Clutch:getPress()
     local driver = self.engine.Transmission.car:getDriver()
@@ -24,13 +26,12 @@ function Clutch:getPress()
 end
 
 function Clutch:think()
-    local engRPM = self.engine.rpm
-    local gboxRPM = self.gearbox.rpm
+    local engineRPM = self.engine.rpm
+    local gearboxRPM = self.gearbox.rpm
     
-    local gboxRatio = self.gearbox.ratio
-    local gboxRatioNotZero = gboxRatio ~= 0 and 1 or 0
+    local gearboxRatioNotZero = self.gearbox.ratio ~= 0 and 1 or 0
 
-    self.slip = ((engRPM - gboxRPM) * RPM_TO_RAD) * gboxRatioNotZero / 2
+    self.slip = ((engineRPM - gearboxRPM) * RPM_TO_RAD) * gearboxRatioNotZero / 2
     self.targetTorque = math.clamp(self.slip * self.stiffness * (1 - self:getPress()), -self.maxTorque, self.maxTorque)
 
     self.torque = math.lerp(self.damping, self.torque, self.targetTorque)

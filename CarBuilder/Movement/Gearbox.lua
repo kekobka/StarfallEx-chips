@@ -32,7 +32,7 @@ end
 
 function Gearbox:think()
 
-    self._ratio = timer.systime() >= self._shiftDuration + self.shiftDuration and self.ratio or math.lerp(self.shiftSmoothness, self._ratio, 0)
+    self._ratio =  self.ratio --timer.systime() >= self._shiftDuration + self.shiftDuration and self.ratio or math.lerp(self.shiftSmoothness, self._ratio, 0)
 
     local driver = self.Transmission.car:getDriver()
     if driver then

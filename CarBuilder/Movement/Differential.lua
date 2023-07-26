@@ -9,17 +9,12 @@ function Differential:initialize(gearbox, data, DifferentialData)
 
     self.DifferentialData = DifferentialData
     self.gearbox = gearbox
-    self.leftWheel = self.DifferentialData.leftw
-    self.rightWheel = self.DifferentialData.rightw
+    self.leftWheel = DifferentialData.leftw
+    self.rightWheel = DifferentialData.rightw
     
-    self.power = data.power or 1
-    self.coast = data.coast or 1
-    self.preload = data.preload or 10
-    self.viscousCoeff = data.viscousCoeff or 0.9
-    self.finalDrive = data.finalDrive or 1
+    self.finalDrive = data.finalDrive or 2.2
 
     self.distributionCoeff = data.distributionCoeff or 1
-    self.maxCorrectingTorque = data.maxCorrectingTorque or 200
 
     self.avgRPM = 0
     self.lwav = 0
@@ -46,11 +41,11 @@ function Differential:think()
     local lwav, rwav = self:getAngleVelocity()
 
     local inertia = self.leftWheel:getInertia().y + self.rightWheel:getInertia().y
-    local simmetric = self.gearbox.torque * self.distributionCoeff * self.finalDrive / 2
-    local lock = (lwav - rwav) / 2 * inertia * TICK_INTERVAL
+    local simmetric = self.gearbox.torque * self.distributionCoeff * self.finalDrive
+    local lock = (lwav - rwav) * inertia * TICK_INTERVAL * 2
 
-    self.leftWheel:applyTorque((simmetric - lock) * 1.33 * -self.leftWheel:getRight())
-    self.rightWheel:applyTorque((simmetric + lock) * 1.33 * self.rightWheel:getRight())
+    self.leftWheel:applyTorque((simmetric - lock) * -self.leftWheel:getRight())
+    self.rightWheel:applyTorque((simmetric + lock) * self.rightWheel:getRight())
 
     self.lwav, self.rwav = self:getAngleVelocity()
     self.avgRPM = self:getRPM()

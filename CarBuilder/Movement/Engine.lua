@@ -11,10 +11,10 @@ function Engine:initialize(Transmission, data)
     self.idleRPM = data.idleRPM or 900
     self.flywheelMass = data.FlywheelMass or 2.4
     self.flywheelRadius = data.FlywheelRadius or 0.418
-    self.maxTorque = data.maxTorque or 250
-    self.initTorqueMap = data.torqueMap or {0.2, 0.5, 0.6, 0.65, 1, 0.3, 0.1}
+    self.maxTorque = data.maxTorque or 350
+    self.initTorqueMap = data.torqueMap or {0.2, 0.5, 0.7, 0.8, 1, 0.3, 0.2}
 
-    self.startFriction = data.StartFriction or -30
+    self.startFriction = data.StartFriction or 0
     self.frictionCoeff = data.FrictionCoeff or 0.01
     self.limiterDuration = data.LimiterDuration or 0.09
 
@@ -112,7 +112,7 @@ function Engine:CalcEnginePerformance()
     local peakPowerRPM = 0
     local powerTable = {} -- Power at each point on the curve for use in powerband calc
     local tqTable = {} -- Power at each point on the curve for use in powerband calc
-    local res = 200 -- Iterations for use in calculating the curve, higher is more accurate
+    local res = 500 -- Iterations for use in calculating the curve, higher is more accurate
 
     -- Calculate peak torque/power RPM
     for i = 0, res do

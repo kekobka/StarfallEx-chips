@@ -1,7 +1,7 @@
 --@client
 local fontArial92 = render.createFont("Arial", 92, 250, true, false, false, false, 0, false, 0)
 local fontArial46 = render.createFont("Arial", 46, 250, true, false, false, false, 0, false, 0)
-local ENGINE_RPM, CAR_SPEED, GEARBOX_GEAR = 0, 123, 0
+ENGINE_RPM, CAR_SPEED, GEARBOX_GEAR = 0, 123, 0
 local resx, resy = render.getGameResolution()
 local linesmatrix = Matrix()
 local linesposx, linesposy = resx - 200, resy - 150

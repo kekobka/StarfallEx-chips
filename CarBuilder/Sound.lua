@@ -11,12 +11,14 @@ local mapRpmToSoundRpms = true
 local onVolume = 1
 local offVolume = 0.5
 local sounds = {
-    [900] = "https://github.com/koptilnya/gmod-data/raw/main/engine_sounds/bmw_s54/ext_e30s54_idle.ogg",
-    [2500] = "https://github.com/koptilnya/gmod-data/raw/main/engine_sounds/bmw_s54/ext_e30s54_on_2500.ogg",
-    [4000] = "https://github.com/koptilnya/gmod-data/raw/main/engine_sounds/bmw_s54/ext_e30s54_on_4000.ogg",
+    
+    
+    [900] = "https://raw.githubusercontent.com/koptilnya/gmod-data/main/engine_sounds/bmw_s54/ext_e30s54_idle.ogg",
+    [2500] = "https://raw.githubusercontent.com/koptilnya/gmod-data/main/engine_sounds/bmw_s54/ext_e30s54_on_2500.ogg",
+    [4000] = "https://raw.githubusercontent.com/koptilnya/gmod-data/main/engine_sounds/bmw_s54/ext_e30s54_on_4000.ogg",
     -- [5500] = "https://github.com/koptilnya/gmod-data/raw/main/engine_sounds/bmw_s54/ext_e30s54_on_5500.ogg",
-    [6750] = "https://github.com/koptilnya/gmod-data/raw/main/engine_sounds/bmw_s54/ext_e30s54_on_6750.ogg",
-    [8500] = "https://github.com/koptilnya/gmod-data/raw/main/engine_sounds/bmw_s54/ext_e30s54_on_8500.ogg"
+    [6750] = "https://raw.githubusercontent.com/koptilnya/gmod-data/main/engine_sounds/bmw_s54/ext_e30s54_on_6750.ogg",
+    [8500] = "https://raw.githubusercontent.com/koptilnya/gmod-data/main/engine_sounds/bmw_s54/ext_e30s54_on_8500.ogg"
 }
 local maxValue = 8500
 function SetSoundRedline(v)
