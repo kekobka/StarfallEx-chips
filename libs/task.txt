@@ -124,7 +124,7 @@ async = setmetatable({},{
     __tostring = function()
         return "async function"
     end})
-if not http.isAsync then
+if not TASKINITIALIZED then
     
     local http_ = table.copy(http)
     
@@ -150,9 +150,9 @@ if not http.isAsync then
     http.isAsync = true
 end
 
-    
-if CLIENT then
-    if not bass.isAsync then
+if not TASKINITIALIZED then
+    if CLIENT then
+        
         bass.isAsync = true
         local bass_ = table.copy(bass)
     
@@ -167,8 +167,40 @@ if CLIENT then
             end
             return unpack(ret)
         end
+        
+    else
+        local prop_ = table.copy(prop)
+        
+        prop.create = async* function(...)
+            
+            while not prop_.canSpawn() do
+                Task.sleep(200)
+            end
+            
+            return prop_.create(...)
+            
+        end
+        prop.createSeat = async* function(...)
+            
+            while not prop_.canSpawn() do
+                Task.sleep(200)
+            end
+            
+            return prop_.createSeat(...)
+            
+        end
+        prop.createCustom = async* function(...)
+            
+            while not prop_.canSpawn() do
+                Task.sleep(200)
+            end
+            local p = prop_.createCustom(...)
+            return p
+            
+        end
     end
 end
+_G.TASKINITIALIZED = true
 
 return Task
 

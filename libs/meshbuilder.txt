@@ -96,7 +96,7 @@ if SERVER then
                 end
             end
 
-            local p = prop.createCustom(rto and rto:localToWorld(pos) or pos, rto and rto:localToWorldAngles(ang) or ang, t, true)
+            local p = await* prop.createCustom(rto and rto:localToWorld(pos) or pos, rto and rto:localToWorldAngles(ang) or ang, t, true)
             p:setParent(parent)
             
             task(p)
