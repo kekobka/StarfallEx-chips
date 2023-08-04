@@ -1,0 +1,154 @@
+--@name randomchips/trigrid
+--@author discord.gg/6Q5NnHQTrh // kekobka // STEAM_0:0:186583728
+--@shared
+--@superuser
+--@include libs/task.txt
+require("libs/task.txt")
+
+local clamp = math.clamp
+function math.clampClr(clr)
+    return Color(clamp(clr[1],0,255),clamp(clr[2],0,255),clamp(clr[3],0,255),clamp(clr[4],0,255))
+end
+
+if SERVER then
+    
+    Radius = 32
+    rastoyanie = 0.5
+
+    local off = math.sqrt(3)*(Radius/12)
+    offx = off
+    xsize = 30
+    ysize = 16
+    holos = {}
+    Task(function()
+        for y = 1, ysize do
+            local add = 0
+            for x = y%2 and 3 or 2, xsize do
+                
+                //local A = hologram.create(chip():getPos() + Vector(x * math.sqrt(3)/2 * Radius + off, Radius * y * math.sqrt(1/4) ),Angle(180,y%2*180,0), "models/holograms/tetra.mdl")
+                
+                if x%2 == 0 then
+                    add = add + math.sqrt(3)*4
+                end
+
+                local A = hologram.create(chip():getPos() + Vector(x * math.sqrt(1/3) * Radius - add, Radius * y + off* math.sqrt(3)),Angle(180,180-x%2*180,0), "models/holograms/tetra.mdl")
+                
+                A:setSize(Vector(Radius-rastoyanie,Radius-rastoyanie,1))
+                A:setColor(Color(0,0,0,0))
+                table.insert(holos, A)
+                off = -off
+                if x%2 == 0 then
+                    off = -off
+                end
+            end
+            Task.yield()
+            
+        end
+        
+        local plycolors = {}
+        for _,ply in next,find.allPlayers() do
+            plycolors[ply] = Color(math.random(0,100),math.random(0,100),math.random(0,100), 0)
+        end
+        local color_inv = Color(0,0,0,0)
+        hook.add("think","",function()
+            for _,v in next,holos do
+                v:setColor(color_inv)
+                for _,ply in next,find.allPlayers() do
+                    local pos = ply:getPos()
+                    if pos:getDistanceSqr(v:getPos()) > 15000 then
+                        continue
+                    end
+                    local dist = pos:getDistance(v:getPos())*2
+                    clr = v:getColor() + plycolors[ply] + Color(0, 0, 0, 300 - dist)
+                    v:setColor(math.clampClr(clr))
+                end
+            end
+        end)
+    end)
+
+else
+    
+
+    
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
