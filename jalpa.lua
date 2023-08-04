@@ -18,8 +18,16 @@ local Jalpa = CarBuilder {
     },
     transmission = {
         engine = {
+            pos = Vector(-50,0,-25),
             maxRPM = 8000,
-            maxTorque = 300
+            maxTorque = 300,
+            sounds = {
+                [900] = "https://raw.githubusercontent.com/koptilnya/gmod-data/main/engine_sounds/bmw_s54/ext_e30s54_idle.ogg",
+                [2500] = "https://raw.githubusercontent.com/koptilnya/gmod-data/main/engine_sounds/bmw_s54/ext_e30s54_on_2500.ogg",
+                [4000] = "https://raw.githubusercontent.com/koptilnya/gmod-data/main/engine_sounds/bmw_s54/ext_e30s54_on_4000.ogg",
+                [6750] = "https://raw.githubusercontent.com/koptilnya/gmod-data/main/engine_sounds/bmw_s54/ext_e30s54_on_6750.ogg",
+                [8500] = "https://raw.githubusercontent.com/koptilnya/gmod-data/main/engine_sounds/bmw_s54/ext_e30s54_on_8500.ogg"
+            }
         },
         gearbox = {
             type = 'MANUAL',
@@ -28,10 +36,11 @@ local Jalpa = CarBuilder {
             ratios = {2.621, 1.902, 1.308, 1, 0.838},
             reverse = 3.382,
             axles = {{
-                distributionCoeff = 0.7,
-                finalDrive = 3.3
+                distributionCoeff = 0.9,
+                finalDrive = 3.3,
+                canHandBreak = true
             },{
-                distributionCoeff = 0.3,
+                distributionCoeff = 0.1,
                 finalDrive = 3.3
             }},
             clutch = {
@@ -68,6 +77,7 @@ local Jalpa = CarBuilder {
 
     },
     steering = {
+        type = "acos",
         lock = 45,
         camber = 3,
         caster = 14,

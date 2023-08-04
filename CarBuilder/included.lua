@@ -2,7 +2,7 @@
 local Task = require("libs/Task.txt")
 --@include libs/MeshBuilder.txt
 local MeshBuilder = require("libs/MeshBuilder.txt")
-local Chassis, Steering, Transmission, Camera
+local Chassis, Steering, Transmission, Camera, Sound
 if SERVER then
     --@include ./Chassis.lua
     Chassis = require("./Chassis.lua")
@@ -17,7 +17,7 @@ else
     --@include ./Hud.lua
     require("./Hud.lua")
     --@include ./Sound.lua
-    require("./Sound.lua")
+    Sound = require("./Sound.lua")
 end
 local color_white = Color(255, 255, 255, 255)
 
@@ -27,7 +27,12 @@ CarBuilder.MeshBuilder = MeshBuilder
 
 function CarBuilder:initialize(data)
     if CLIENT then
-        SetSoundRedline(data.transmission.engine.maxRPM or 7000)
+        local parent = chip()
+        if data.transmission.engine.pos then
+            parent = hologram.create(chip():localToWorld(data.transmission.engine.pos),chip():getAngles(),"models/holograms/cube.mdl",Vector(1))
+            parent:setParent(chip())
+        end
+        Sound(data.transmission.engine.maxRPM,parent,data.transmission.engine.sounds)
         return self
     end
     self.MeshBuilder = MeshBuilder(data.obj)
@@ -98,6 +103,7 @@ function CarBuilder:_think()
     end
 
     self.Transmission:think()
+    self.Steering:think()
 
     net.start("CAR_SPEED")
     net.writeUInt(base:getVelocity():getLength()* 1.905 / 100000 * 3600, 12)
