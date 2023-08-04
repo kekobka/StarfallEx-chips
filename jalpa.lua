@@ -36,11 +36,11 @@ local Jalpa = CarBuilder {
             ratios = {2.621, 1.902, 1.308, 1, 0.838},
             reverse = 3.382,
             axles = {{
-                distributionCoeff = 0.9,
+                distributionCoeff = 0.7,
                 finalDrive = 3.3,
                 canHandBreak = true
             },{
-                distributionCoeff = 0.1,
+                distributionCoeff = 0.3,
                 finalDrive = 3.3
             }},
             clutch = {
@@ -77,7 +77,7 @@ local Jalpa = CarBuilder {
 
     },
     steering = {
-        type = "acos",
+        type = "SAT",
         lock = 45,
         camber = 3,
         caster = 14,
