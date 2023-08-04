@@ -62,7 +62,7 @@ function SATSteering:getWheelFrictionForce(base, wheel, slave, axle)
     local factor = math.clamp(load * friction, -maxSATForce, maxSATForce)
     local sidewaysFriction = factor * evalSATCurve(slip)
     
-    return sidewaysFriction * KG_TO_N
+    return sidewaysFriction / 6
     -- return (factor * evalSATCurve(slip) * math.sign(slip) + mechanicalTrail * math.sin(math.rad(slip))) / KG_TO_N / inertia 
 end
 

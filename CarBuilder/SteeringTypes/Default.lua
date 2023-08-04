@@ -62,8 +62,8 @@ function Steering:applyAngles()
             axle.right:setAngles(self.body:localToWorldAngles(Angle(camber, 0, 0 )))
             axle.left:setAngles(self.body:localToWorldAngles(Angle(-camber, 0, 0 )))
             if self.velL > 360 then
-                axle.rightw:applyForceCenter(axle.rightw:getRight() * axle.rightw:getMass() * 3) 
-                axle.leftw:applyForceCenter(axle.leftw:getRight() * axle.leftw:getMass() * 3) 
+                axle.rightw:applyForceCenter(axle.rightw:getRight() * axle.rightw:getMass() * 4) 
+                axle.leftw:applyForceCenter(axle.leftw:getRight() * axle.leftw:getMass() * 4) 
             end
         end
     end
