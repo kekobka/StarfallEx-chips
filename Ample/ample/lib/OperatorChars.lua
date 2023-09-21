@@ -9,6 +9,7 @@ OPERATOR_CHARS = {
     ["^"] = TOKENTYPES.FLEX,
     ["%"] = TOKENTYPES.MODULE,
 
+    [":"] = TOKENTYPES.KEYKARD,
     ["["] = TOKENTYPES.OPENTBL,
     ["]"] = TOKENTYPES.CLOSETBL,
     ["("] = TOKENTYPES.LBRACKET,
@@ -23,6 +24,7 @@ OPERATOR_CHARS = {
     [">"] = TOKENTYPES.GT,
     ["&"] = TOKENTYPES.AMP,
     ["|"] = TOKENTYPES.BAR,
+    ["."] = TOKENTYPES.POINT,
 
     ["=="] = TOKENTYPES.EQEQ,
     ["<="] = TOKENTYPES.LTEQ,
@@ -33,6 +35,7 @@ OPERATOR_CHARS = {
 
     ["+="] = TOKENTYPES.PLUSEQ,
     ["++"] = TOKENTYPES.PLUSPLUS,
+    [".."] = TOKENTYPES.CONCAT,
     ["--"] = TOKENTYPES.MINUSMINUS,
     ["-="] = TOKENTYPES.MINUSEQ,
     ["/="] = TOKENTYPES.SLASHEQ,
@@ -42,6 +45,7 @@ OPERATOR_CHARS = {
     ["->"] = TOKENTYPES.POINTER,
     ["=>"] = TOKENTYPES.LAMBDA,
 
+    ["#"] = TOKENTYPES.PRIVATEVAR,
     [";"] = TOKENTYPES.ENDBLOCK,
 
 }

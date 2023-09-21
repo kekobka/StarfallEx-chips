@@ -1,8 +1,7 @@
--- @name gui
--- @author valera 41 // kekobka // STEAM_0:0:186583728
--- @shared
--- if player() ~= owner() then return end
-
+--- @name gui
+--- @author valera 41 // kekobka // STEAM_0:0:186583728
+--- @shared
+--- if player() ~= owner() then return end
 local function isURL(str)
     local _1, _2, prefix = str:find("^(%w-):")
 
@@ -12,15 +11,27 @@ local function canProcess()
     return math.max(cpuTotalAverage(), cpuTotalUsed() / 4) < cpuMax() * 0.7
 end
 local requireold = dofile
-function require(dir) return requireold(dir) end
+function require(dir)
+    return requireold(dir)
+end
 
 function accessorFunc(tbl, varName, name, defaultValue)
     tbl[varName] = defaultValue
-    tbl["get" .. name] = function(self) return self[varName] end
-    tbl["set" .. name] = function(self, value) self[varName] = value end
+    tbl["get" .. name] = function(self)
+        return self[varName]
+    end
+    tbl["set" .. name] = function(self, value)
+        self[varName] = value
+    end
 end
 
-_G.DOCK = {FILL = 1, LEFT = 2, RIGHT = 3, TOP = 4, BOTTOM = 5}
+_G.DOCK = {
+    FILL = 1,
+    LEFT = 2,
+    RIGHT = 3,
+    TOP = 4,
+    BOTTOM = 5
+}
 
 _G.FILL = 1
 _G.LEFT = 2
@@ -33,7 +44,9 @@ local function async(a)
     local workers = {}
     hook.add("think", "async." .. G, function()
         for Key, work in ipairs(workers) do
-            if not canProcess() then break end
+            if not canProcess() then
+                break
+            end
             try(work(Key))
         end
     end)
@@ -52,7 +65,9 @@ local function queue(a)
     local workers = {}
     hook.add("think", "queue." .. G, function()
         for Key, work in ipairs(workers) do
-            if not canProcess() or not pcall(work(Key)) then break end
+            if not canProcess() or not pcall(work(Key)) then
+                break
+            end
         end
     end)
     return function(...)
@@ -66,14 +81,18 @@ local function queue(a)
     end
 end
 local http_ = table.copy(_G.http)
-http.post = queue(function(...) http_.post(...) end)
-http.get = queue(function(...) http_.get(...) end)
+http.post = queue(function(...)
+    http_.post(...)
+end)
+http.get = queue(function(...)
+    http_.get(...)
+end)
 
 -- local elements = requireDir("./elements")
 local vGui = class("vgui")
---@includedir ./elements
---@includedir ./skins
---@include ./styles.lua
+---@includedir ./elements
+---@includedir ./skins
+---@include ./styles.lua
 
 require("./styles.lua")
 
@@ -99,12 +118,16 @@ function vGui:initialize(device)
     self.initialized = false
     self.matrix = Matrix()
     self.skin = self.class.static.skins["default"]
-    local function set_element(element, code) elements[element] = code end
+    local function set_element(element, code)
+        elements[element] = code
+    end
     local function http_retry(element, url)
 
         self.httpget(url, function(code)
             elements[element] = code
-            if #elements == #ELEMENTS then initialize() end
+            if #elements == #ELEMENTS then
+                initialize()
+            end
         end, function()
             self.error("try download '" .. element .. "' element")
             http_retry(element, url)
@@ -116,7 +139,9 @@ function vGui:initialize(device)
         _resx, _resy = 1024, 1024
     end
 
-    function self:getResolution() return _resx, _resy end
+    function self:getResolution()
+        return _resx, _resy
+    end
 
     self.hint("Initialized")
 
@@ -124,17 +149,25 @@ function vGui:initialize(device)
 
     _root:setSize(self:getResolution())
     _root:setVisible(false)
-    function self:getRoot() return _root end
+    function self:getRoot()
+        return _root
+    end
 
-    function self:setVisible(state) _root:setVisible(state) end
+    function self:setVisible(state)
+        _root:setVisible(state)
+    end
 
-    function self:isVisible() return _root:isVisible() end
+    function self:isVisible()
+        return _root:isVisible()
+    end
 
     local SCALE = (_resx / 1366)
     if device == "hud" then
         enableHud(owner(), true)
         hook.add("postdrawhud", "gui_renderer", function()
-            if self:isVisible() then input.enableCursor(true) end
+            if self:isVisible() then
+                input.enableCursor(true)
+            end
             if not hasPermission("input") or not input.getCursorVisible() then
                 return
             end
@@ -167,21 +200,21 @@ function vGui:initialize(device)
             input.enableCursor(not input.getCursorVisible())
             self:setVisible(input.getCursorVisible())
         end
-        if not hasPermission("input") or
-            (device == "hud" and not input.getCursorVisible()) then
+        if not hasPermission("input") or (device == "hud" and not input.getCursorVisible()) then
             return
         end
         local keyName = input.getKeyName(key)
         local x, y = self:getCursor()
-        if not x or not y then return end
+        if not x or not y then
+            return
+        end
         if key >= 107 and key <= 111 and _root:isVisible() then
 
             _root:_postEvent("MOUSE_PRESSED", x, y, key, keyName)
 
         elseif key == MOUSE.MWHEELUP or key == MOUSE.MWHEELDOWN then
 
-            hook.run("mousewheeled", (MOUSE.MWHEELUP and 1 or 0) -
-                         (MOUSE.MWHEELDOWN and 1 or 0))
+            hook.run("mousewheeled", (MOUSE.MWHEELUP and 1 or 0) - (MOUSE.MWHEELDOWN and 1 or 0))
 
             _root:_postEvent("MOUSE_WHEELED", x, y, key, keyName)
 
@@ -193,8 +226,7 @@ function vGui:initialize(device)
     end)
 
     hook.add("inputReleased", "gui_inputReleased", function(key)
-        if not hasPermission("input") or
-            (device == "hud" and not input.getCursorVisible()) then
+        if not hasPermission("input") or (device == "hud" and not input.getCursorVisible()) then
             return
         end
         local keyName = input.getKeyName(key)
@@ -208,8 +240,7 @@ function vGui:initialize(device)
 
         elseif key == MOUSE.MWHEELUP or key == MOUSE.MWHEELDOWN then
 
-            hook.run("gui_mousewheeled", (MOUSE.MWHEELUP and 1 or 0) -
-                         (MOUSE.MWHEELDOWN and 1 or 0))
+            hook.run("gui_mousewheeled", (MOUSE.MWHEELUP and 1 or 0) - (MOUSE.MWHEELDOWN and 1 or 0))
 
             _root:_postEvent("MOUSE_WHEELED", x, y, key, keyName)
 
@@ -218,8 +249,7 @@ function vGui:initialize(device)
         end
     end)
     hook.add("think", "gui_think", function()
-        if not hasPermission("input") or
-            (device == "hud" and not input.getCursorVisible()) then
+        if not hasPermission("input") or (device == "hud" and not input.getCursorVisible()) then
             return
         end
 
@@ -235,7 +265,9 @@ function vGui:initialize(device)
     end)
     self.initialized = true
     if self.init then
-        timer.simple(0, function() self:init(self:getResolution()) end)
+        timer.simple(0, function()
+            self:init(self:getResolution())
+        end)
     end
 
 end
@@ -252,7 +284,9 @@ function vGui.httpget(url, callbackSuccess, callbackFail, headers)
         notification.addLegacy("[GUI] DOWNLOAD", NOTIFY.HINT, 3)
     end
 
-    http.get(url, function(...) callbackSuccess(...) end, function(...)
+    http.get(url, function(...)
+        callbackSuccess(...)
+    end, function(...)
         vGui.error("HTTP", ...)
         callbackFail()
     end, headers)
@@ -268,7 +302,9 @@ end
 function vGui:getCursor()
     if self._device == "screen" then
         x, y = render.cursorPos(player(), chip():getLinkedComponents()[1])
-        if not x or not y then x, y = 0, 0 end
+        if not x or not y then
+            x, y = 0, 0
+        end
         x, y = x * 2, y * 2
         return x, y
     else
@@ -286,14 +322,20 @@ function vGui:add(name, parent, cl)
     else
         self:getRoot():addChild(el)
     end
-    if cl then cl(el) end
+    if cl then
+        cl(el)
+    end
     return el
 end
 function vGui:create(name, parent, cl)
     assert(istable(ELEMENTS[string.lower(name)]), name .. " is not element")
     local el = ELEMENTS[string.lower(name)]:new(self)
-    if parent then parent:addChild(el) end
-    if cl then cl(el) end
+    if parent then
+        parent:addChild(el)
+    end
+    if cl then
+        cl(el)
+    end
     return el
 end
 
@@ -301,15 +343,15 @@ function vGui:setSkin(name)
     assert(istable(self.class.static.skins[name]), name .. " is not skin")
     self.skin = self.class.static.skins[name]
 end
-function vGui:openButton(b) self.openkey = b end
+function vGui:openButton(b)
+    self.openkey = b
+end
 
 function vGui.register(name, mtable, root)
 
     assert(istable(ELEMENTS[string.lower(root)]), name .. " is not element")
 
-    ELEMENTS[string.lower(name)] = table.merge(class(name,
-                                                     ELEMENTS[string.lower(root)]),
-                                               mtable)
+    ELEMENTS[string.lower(name)] = table.merge(class(name, ELEMENTS[string.lower(root)]), mtable)
 end
 
 return vGui -- require("vgui")

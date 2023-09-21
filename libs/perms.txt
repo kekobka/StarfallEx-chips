@@ -1,4 +1,4 @@
---@name valeras/libs/perms
+--@name libs/perms
 --@author discord.gg/6Q5NnHQTrh // kekobka // STEAM_0:0:186583728
 --@shared
 

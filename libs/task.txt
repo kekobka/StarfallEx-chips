@@ -1,3 +1,5 @@
+--@name libs/task
+
 -- втф чо асинхронность в гмоде 
 -- ОСТОРОЖНО ОНО ЛОМАЕТ http И bass И prop таблицы превращая их в асинхронные
 if not Task then
@@ -131,6 +133,7 @@ if not TASKINITIALIZED then
     http.get = async* function(url, headers)
     
         local ret
+
         http_.get(url, function(...) ret = {...} end, function(...) ret = {...} end, headers)
         while not ret do
             Task.yield()
@@ -147,10 +150,29 @@ if not TASKINITIALIZED then
         end
         return unpack(ret)
     end
+    fetch = async* function(url,options)
+        options = options or {}
+        local ret
+        local cc = function(...)
+            local args = {...}
+            ret = {
+                body = args[1],
+                length = args[2],
+                headers = args[3],
+                code = args[4]
+            }
+        end
+        if options.payload then
+            http_.post(url, options.payload, cc, cc, options.headers)
+        else
+            http_.get(url, cc, cc, options.headers)
+        end
+        while not ret do
+            Task.yield()
+        end
+        return ret
+    end
     http.isAsync = true
-end
-
-if not TASKINITIALIZED then
     if CLIENT then
         
         bass.isAsync = true
@@ -160,18 +182,36 @@ if not TASKINITIALIZED then
         
             local ret
             
-            bass_.loadURL(path, flags, function(...) ret = {...} end)
+            bass_.loadURL(path, flags or "", function(...) ret = {...} end)
                 
             while not ret do
                 Task.yield()
             end
             return unpack(ret)
         end
-        
+        bassURL = bass.loadURL
+        soundLoad = async* function(url, flags)
+            local ret
+            local cc = function(...)
+                local args = {...}
+                ret = {
+                    Bass = args[1],
+                    error = args[2],
+                    name = args[3]
+                }
+            end
+            
+            bass_.loadURL(url, flags or "", cc)
+            
+            while not ret do
+                Task.yield()
+            end
+            return ret
+        end
     else
         local prop_ = table.copy(prop)
         
-        prop.create = async* function(...)
+        prop.createAsync = async* function(...)
             
             while not prop_.canSpawn() do
                 Task.sleep(200)
@@ -180,7 +220,7 @@ if not TASKINITIALIZED then
             return prop_.create(...)
             
         end
-        prop.createSeat = async* function(...)
+        prop.createSeatAsync = async* function(...)
             
             while not prop_.canSpawn() do
                 Task.sleep(200)
@@ -189,7 +229,7 @@ if not TASKINITIALIZED then
             return prop_.createSeat(...)
             
         end
-        prop.createCustom = async* function(...)
+        prop.createCustomAsync = async* function(...)
             
             while not prop_.canSpawn() do
                 Task.sleep(200)

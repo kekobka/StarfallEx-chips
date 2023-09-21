@@ -224,13 +224,38 @@ else
         local last = Task.While(false)
         local meshData = self.meshData
         if self.debug then
+            local debugcode = [[
+--@include libs/MeshBuilder.txt
+
+local MeshBuilder = require("libs/MeshBuilder.txt")
+
+if SERVER then
+    local pos = Vector()
+    local ang = Angle()
+    local scale = Vector(1)
+    local parent = chip()
+    local relativeTo = chip()
+    local color = Color(255,255,255,255)
+    local mat = "models/debug/debugwhite"
+    
+    local LINK = "]]..self.link..[["
+    
+    local Builder = MeshBuilder(LINK)
+]]
+            --  Builder:build(name, pos, ang, scale, parent, relativeTo, color, mat)
             for name, v in pairs(self.meshData) do
-                local holo = hologram.create(chip():getPos(), Angle(), "models/starfall/holograms/box.mdl", Vector(1))
+                local holo = hologram.create(chip():getPos(), chip():getAngles(), "models/starfall/holograms/box.mdl", Vector(1))
                 holo:setRenderBounds(Vector(-200), Vector(200))
                 holo:setMesh(v)
                 holo:setParent(chip())
                 print(name)
+                debugcode = debugcode .. "    Builder:build('" ..name .. "', pos, ang, scale, parent, relativeTo, color, mat)\n"
                 Task.sleep(500)
+            end
+            debugcode = debugcode .. "    Builder:apply()\nend"
+            if player() == owner() then
+                file.createDir("MeshBuilder")
+                file.write("MeshBuilder/last.txt",debugcode)
             end
         else
             for name, v in pairs(self.objects) do

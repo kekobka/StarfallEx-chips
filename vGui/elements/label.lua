@@ -1,5 +1,5 @@
--- @name label
--- @author discord.gg/6Q5NnHQTrh // kekobka // STEAM_0:0:186583728
+---@name label
+---@author discord.gg/6Q5NnHQTrh // kekobka // STEAM_0:0:186583728
 local E = require("./element.lua")
 
 local element = class("vLabel", E)
@@ -8,7 +8,9 @@ local StringAnimaizer = class("StringAnimaizer")
 
 StringAnimaizer.HACKERSTRING = function(i, l, t)
     local ret = string.explode("", t)
-    for j = i, l do ret[j] = string.utf8char(math.random(200, 500)) end
+    for j = i, l do
+        ret[j] = string.utf8char(math.random(200, 500))
+    end
     return table.concat(ret)
 end
 
@@ -32,7 +34,9 @@ function StringAnimaizer:initialize(target, speed, rate, timeout, fn)
             while true do
                 self.draw = fn(math.floor(i) + 1, self.length, self.target)
                 coroutine.wait(rate / 1000)
-                if i >= self.length then coroutine.wait(timeout) end
+                if i >= self.length then
+                    coroutine.wait(timeout)
+                end
                 i = (i % self.length) + (self.length * speed) / 10
             end
         end)
@@ -69,17 +73,17 @@ end
 
 function element:paint(x, y, w, h)
 
-    self.textmatrix:setTranslation(Vector(x, y))
-    self.textmatrix:setScale(Vector(self._textW / 255 * 2,
-                                    self._textH / 255 * 2, 0))
+    -- self.textmatrix:setTranslation(Vector(x, y))
+    -- self.textmatrix:setScale(Vector(self._textW / 255 * 2,
+    --                                 self._textH / 255 * 2, 0))
 
-    render.pushMatrix(self.textmatrix)
+    -- render.pushMatrix(self.textmatrix)
 
     render.setFont(self:getFont())
     render.setColor(self:getColorFromScheme("text"))
-    render.drawSimpleText(0, 0, self:getText(), self._align, self._aligny)
+    render.drawSimpleText(x, y, self:getText(), self._align, self._aligny)
 
-    render.popMatrix(self.textmatrix)
+    -- render.popMatrix(self.textmatrix)
 end
 
 function element:setFont(font)
@@ -105,21 +109,28 @@ function element:setText(text)
     return self
 end
 
-function element:getText() return self._text end
+function element:getText()
+    return self._text
+end
 
-function element:getFont() return self._font end
-function element:setAlign(x,y) 
+function element:getFont()
+    return self._font
+end
+function element:setAlign(x, y)
     self._align = x
     self._aligny = y and y or x
 end
 
-function element:getTextSize() return self._textWidth, self._textHeight end
+function element:getTextSize()
+    return self._textWidth, self._textHeight
+end
 function element:addAnimation(target, speed, rate, timeout, fn)
     self._anim = StringAnimaizer:new(target, speed, rate, timeout, fn)
     self:setText(target)
     self:sizeToContents()
-    hook.add("think", table.address(self._anim),
-             function() self:setText(self._anim:get()) end)
+    hook.add("think", table.address(self._anim), function()
+        self:setText(self._anim:get())
+    end)
     return self
 end
 
@@ -149,8 +160,12 @@ function element:scale(wmult, hmult)
 
 end
 
-function element:setScale(...) self:scale(...) end
-function element:getAnimators() return self.anims end
+function element:setScale(...)
+    self:scale(...)
+end
+function element:getAnimators()
+    return self.anims
+end
 
 function element:setTextSize(w, h)
 
@@ -167,7 +182,6 @@ function element:sizeToContents()
 
     self:setSize(s / self._textW, d / self._textH)
 end
-
 
 return element
 

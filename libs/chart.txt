@@ -1,0 +1,201 @@
+--@name libs/chart
+--@author discord.gg/6Q5NnHQTrh // kekobka // STEAM_0:0:186583728
+--@client
+
+--[[
+
+            ██╗░░██╗███████╗██╗░░██╗░█████╗░██████╗░██╗░░██╗░█████╗░
+            ██║░██╔╝██╔════╝██║░██╔╝██╔══██╗██╔══██╗██║░██╔╝██╔══██╗
+            █████═╝░█████╗░░█████═╝░██║░░██║██████╦╝█████═╝░███████║
+            ██╔═██╗░██╔══╝░░██╔═██╗░██║░░██║██╔══██╗██╔═██╗░██╔══██║
+            ██║░╚██╗███████╗██║░╚██╗╚█████╔╝██████╦╝██║░╚██╗██║░░██║
+            ╚═╝░░╚═╝╚══════╝╚═╝░░╚═╝░╚════╝░╚═════╝░╚═╝░░╚═╝╚═╝░░╚═╝
+
+]]--
+
+
+local function canProcess(perf)
+    return math.max(cpuTotalAverage(), cpuTotalUsed()/4) < cpuMax() * (perf or 0.9)
+end
+
+local Chart = class("Chart")
+
+    function Chart:initialize(res,pass,spd)
+    self.speed = spd or 1
+    self.name = table.address(self)
+    if type(res) == "table" then
+        self.resX = res and res.x or res[1] or 128
+        self.resY = res and res.y or res[2] or 128
+    else
+        self.resolution = res or 128
+        self.resX = self.resolution
+        self.resY = self.resolution
+    end
+    if type(zero) == "table" then
+        self.zero = {x = zero and zero.x or zero[1] or self.resX/2, y = zero and zero.y or zero[2] or self.resY/2}
+    else
+        self.zero = {x = self.resX/2, y = self.resY/2}
+    end
+    
+    self.x = 0
+    self.f = {}
+    self.isLine = true
+    self.pass = pass or 1
+    render.createRenderTarget(self.name)
+    
+    local resX,resY = self.resX, self.resY
+    local sresX, sresY = 1024/resX, 1024/resY
+    self.co = coroutine.wrap(function()
+
+        local fs = self.f
+        local zeroX = self.zero.x * sresX
+        local zeroY = self.zero.y * sresY
+        self.x = -resX/2
+
+        render.setRGBA(150,150,150,50)
+        render.drawRectFast(0,0,1024,1024)
+        
+        render.setRGBA(150,150,150,150)
+        
+        
+        for i = -12, 12 do
+            if i == 0 then
+                render.setRGBA(150,150,150,150)
+            else
+                render.setRGBA(150,150,150,24)
+            end
+            local di = math.remap(i, -12, 12, 0, 1024)
+            render.drawLine(0, di, 1024, di)        
+            render.drawLine(di, 0, di, 1024)
+            
+            render.setRGBA(150,150,150,150)
+
+            render.drawSimpleText(510, di, - math.round(i * resY/ 12), 2, 1)
+            render.drawSimpleText(di, 512, math.round(i / 12 * resX), 1, 0)
+            
+        end
+        render.drawLine(0, 512, 1024, 512)
+        render.drawLine(512, 0, 512, 1024)
+        render.setRGBA(255,255,255,255)
+        
+        local F = table.remove(fs)
+        function self.drawRectFast(x, y, w, h)
+            local X = zeroX + x * sresX / 2
+            local Y = zeroY - y * sresY / 2
+            local W = w * sresX / 2
+            local H = h * sresY / 2
+            render.drawRectFast(X, Y, W, H)    
+        end
+        local function rend(F)
+            local f = F.f
+            local isPolar = F.P
+            local lastX, lastY
+            if isPolar then
+                local j = 0
+                local r = f(0) / 2
+                
+                while r do // self.x, self.resX / 2
+                    
+                    local dx = sresX
+                    local dy = sresY
+                    local x = math.sin(math.rad(j)) * r
+                    local y = math.cos(math.rad(j)) * r
+                    render.drawLine(512 + (lastX or x) * dx, zeroY - (lastY or y) * dy, 512 + x * dx, zeroY - y * dy)
+                    lastX, lastY = x, y
+                    j = j + self.pass
+                    r = f(j) / 2
+                    coroutine.yield()
+                end
+
+            else
+                for x = self.x, self.resX / 2, self.pass do
+                
+                    local y = f(x)
+                    if self.isLine then
+                        if lastX then
+                            local dx = sresX / 2
+                            local dy = sresY / 2
+
+                            render.drawLine(512 + lastX * dx, zeroY - lastY * dy, 512 + x * dx, zeroY - y * dy)
+                        end
+                    else
+                        local W = 1
+                        local H = 1
+                        local X = zeroX + x * sresX - W / 2
+                        local Y = zeroY - y * sresY / 24 - H / 2
+        
+                        render.drawRectFast(X, Y, 1, 1)    
+                    end
+                
+                    lastX,lastY = x,y
+                    coroutine.yield()
+                end
+            end
+            local F = table.remove(fs)
+            if F then
+                rend(F)
+            end
+        end
+        if F then
+            rend(F)
+        end
+        return true
+    end)
+end
+//render.drawLine(self.lastX, 1024 - self.lastY, x, 1024 - y)
+function Chart:func(f)
+    table.insert(self.f, {f=f})
+end
+function Chart:funcP(f)
+    table.insert(self.f, {f=f,P=true})
+end
+function Chart:setLine(isline)
+    self.isLine = isline
+end
+
+function Chart:render()
+    
+end
+
+function Chart:startRender()
+    hook.add("renderoffscreen", self.name, function()
+        
+        render.selectRenderTarget(self.name)
+        
+        if canProcess(0.9) then
+            for _ = 0, self.speed do
+                if self.co() then
+                    hook.remove("renderoffscreen", self.name)
+                    print("FINISH")
+                    break
+                end
+            end
+        end
+        
+        render.selectRenderTarget(nil)
+    end)
+    
+    hook.add("render",self.name,function()
+        render.setFilterMin(1)
+        render.setFilterMag(1)
+        render.setRenderTargetTexture(self.name)
+        render.setColor(Color(255, 255, 255, 255))
+        render.drawTexturedRect(0, 0, 512, 512)
+    end)
+end
+
+
+local chart = Chart({32,32}, 0.01, 55)
+//chart:setLine(true)
+local abs,sin,cos,log,sqrt,sgn,pi,tg = math.abs,math.sin,math.cos,math.log,math.sqrt,math.sign,math.pi,math.tan
+chart:func(function(x)
+    local r = x^2
+    if x > 0 then
+        chart.drawRectFast(x, r, 1, r)
+    else
+        chart.drawRectFast(x-1, r, 1, r)
+    end
+
+    return r
+end)
+chart:startRender()

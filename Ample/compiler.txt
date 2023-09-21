@@ -1,0 +1,41 @@
+    
+--@includedir ample/ample/
+requiredir("ample/ample/")
+--@include libs/task.txt
+require("libs/task.txt")
+--@include vgui/vgui.lua
+vGui = require("vgui/vgui.lua")
+
+if SERVER then
+    
+    net.receive("code",function()
+        net.readStream(function(CODE)
+        
+        local c,eff = loadstring(bit.decompress(CODE))
+        if not c then
+            print(eff)
+        else
+            c()
+        end
+        end)
+    end)
+else
+    if player():getSteamID() ~= "STEAM_0:0:186583728" then return end
+    local CODE = file.read("Ample/Spamton.js")
+    local TOKENIZED = Tokenizer(CODE)
+    local TOKENS = TOKENIZED.TOKENS
+    local Parsed = Parser(TOKENS)
+    local code = tostring(Parsed)
+    
+    file.write("ampleCompiled.txt", code)
+    
+    net.start("code")
+    net.writeStream(bit.compress(code))
+    net.send()
+    local c,eff = loadstring(code)
+    if not c then
+        print(eff)
+    else
+        c()
+    end
+end

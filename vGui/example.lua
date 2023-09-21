@@ -1,6 +1,6 @@
---@name gui example
---@author discord.gg/6Q5NnHQTrh // kekobka // STEAM_0:0:186583728
---@shared
+---@name gui example
+---@author discord.gg/6Q5NnHQTrh // kekobka // STEAM_0:0:186583728
+---@shared
 --[[
 
             ██╗░░██╗███████╗██╗░░██╗░█████╗░██████╗░██╗░░██╗░█████╗░
@@ -11,7 +11,9 @@
             ╚═╝░░╚═╝╚══════╝╚═╝░░╚═╝░╚════╝░╚═════╝░╚═╝░░╚═╝╚═╝░░╚═╝
 
 ]] --
-if player() ~= owner() then return end
+if player() ~= owner() then
+    return
+end
 
 local function createDOCKCHECK(gui, main, res, resy)
     local menu = gui:add("tab", main)
@@ -72,8 +74,12 @@ local function createDOCKCHECK(gui, main, res, resy)
     button:setText("RIGHT")
     button:dock(RIGHT)
 
-    leftshape:toAllChild(function(child) child:dockMargin(mx, my, mw, mh) end)
-    rightshape:toAllChild(function(child) child:dockMargin(mx, my, mw, mh) end)
+    leftshape:toAllChild(function(child)
+        child:dockMargin(mx, my, mw, mh)
+    end)
+    rightshape:toAllChild(function(child)
+        child:dockMargin(mx, my, mw, mh)
+    end)
 
 end
 local function createExample(gui, main, res, resy)
@@ -85,12 +91,16 @@ local function createExample(gui, main, res, resy)
     but2:setText("Button")
     but2:setSize(100, 32)
 
-    function but2:onClick() local w, h = menu:getSize() end
+    function but2:onClick()
+        local w, h = menu:getSize()
+    end
     local progress = gui:add("progress", menu)
     progress:setPos(0, 128 - 16)
     local slider = gui:add("bslider", menu)
     slider:setPos(0, 32)
-    function slider:onChange(a) progress:setValue(a) end
+    function slider:onChange(a)
+        progress:setValue(a)
+    end
     local checkbox = gui:add("checkbox", menu)
     checkbox:setPos(0, 32 + 16)
     checkbox:setLabel("Checkbox")
@@ -104,8 +114,18 @@ local function createExample(gui, main, res, resy)
     listview:setText("listview")
     listview:setSize(200, 252)
     listview:setPos(128, 8)
-    for i = 1, 5 do listview:addLine(i, i) end
+    for i = 1, 5 do
+        listview:addLine(i, i)
+    end
 
+    local combobox = gui:add("combobox", menu)
+    combobox:setText("combobox")
+    combobox:setWide(200)
+    combobox:setPos(350, 8)
+    combobox:GenerateExample()
+    function combobox:onSelect(index, value, data)
+        print(index, value, data)
+    end
     for i = 1, 6 do
         local radio = gui:add("radio", menu)
         radio:setPos(2, 199 + i * 19 - 33)
@@ -116,9 +136,13 @@ local function createExample(gui, main, res, resy)
     for _, radio in ipairs(radios) do
         function radio:onChange(state)
             print(self.numb, state)
-            if not state then return end
+            if not state then
+                return
+            end
             for _, radio in ipairs(radios) do
-                if radio ~= self then radio:setChecked(false) end
+                if radio ~= self then
+                    radio:setChecked(false)
+                end
             end
 
         end
@@ -126,7 +150,7 @@ local function createExample(gui, main, res, resy)
 
 end
 if CLIENT then
-    --@include ./vgui.lua
+    ---@include ./vgui.lua
     local vGui = require('./vgui.lua')
 
     local gui = vGui:new("hud")

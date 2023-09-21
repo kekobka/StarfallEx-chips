@@ -2,5 +2,8 @@
     "editor.formatOnSave": true,
     "editor.formatOnPaste": false,
     "editor.formatOnType": true,
-    "editor.defaultFormatter": "Koihik.vscode-lua-format"
+    "editor.defaultFormatter": "Koihik.vscode-lua-format",
+    "[lua]": {
+        "editor.defaultFormatter": "yinfei.luahelper"
+    }
 }

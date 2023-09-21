@@ -5,6 +5,7 @@ local TOKENTYPES = TOKENTYPES
 local TOKENTYPESSTRING = TOKENTYPESSTRING
 
 function Tokenizer:initialize(code)
+    local code = code .. "\n"
     self.code = code
     self.pos = 0
     self.length = code:len()
@@ -23,21 +24,27 @@ end
 function Tokenizer:tokenize(what)
     while self.pos <= what do
         local curr = self:peek(0)
+        if curr == self._wait.antitype then
+            self._wait.stack = (self._wait.stack or 0) + 1
+        end
         if curr == self._wait.Who then
-            curr = self._wait.Old
-            self:addToken(self._wait.Type)
-            self._wait = {}
+            if self._wait.stack and self._wait.stack > 0 then
+                self._wait.stack = self._wait.stack - 1
+            else
+                curr = self._wait.Old
+                self:addToken(self._wait.Type)
+                self._wait = {}
+            end
         end
         if tonumber(curr) then
             self:tokenizeNumber()
-        elseif curr == "." then
-            self:addToken(TOKENTYPES.POINT)
-            self:next()
         elseif curr == ";" then
-            -- self:addToken(TOKENTYPES.ENDBLOCK)
+            self:addToken(TOKENTYPES.ENDBLOCK)
             self:next()
-        elseif curr == '"' or curr == "'" or curr == "`" then
+        elseif curr == '"' or curr == "'" then
             self:tokenizeString(curr)
+        elseif curr == "`" then
+            self:tokenizeFString(curr)
         elseif OPERATOR_CHARS[curr] then
             self:tokenizeOperator()
         elseif string.isLetter(curr) then
@@ -60,10 +67,11 @@ function Tokenizer:next()
     self.pos = self.pos + 1
     return self:peek(0)
 end
-function Tokenizer:wait(old, who, type)
+function Tokenizer:wait(old, who, type, antitype)
     self._wait.Old = old
     self._wait.Who = who
     self._wait.Type = type
+    self._wait.antitype = antitype
 end
 
 local TokenMeta = {
@@ -80,8 +88,22 @@ function Tokenizer:tokenizeNumber()
     local buff = ""
     local point
     local curr = self:peek(0)
-
-    while curr do
+    if curr == "0" and self:peek(1) == "x" then
+        self:next()
+        self:next()
+        curr = self:peek(0)
+        while curr and curr ~= "" do
+            local _,a = curr:gsub("^[0-9a-fA-F]+",function() return "" end)
+            if a == 0 then
+                break
+            end
+            buff = buff .. curr:upper()
+            curr = self:next()
+        end
+    
+        return self:addToken(TOKENTYPES.HEX, "0x" .. buff)
+    end
+    while curr and curr ~= "" do
         if curr == "." then
             if point then
                 return throw("Invalid number")
@@ -100,14 +122,14 @@ end
 function Tokenizer:tokenizeComment()
     local curr = self:peek(0)
 
-    while curr and curr ~= "\n" do
+    while curr and curr ~= "\n" and curr ~= "" do
         curr = self:next()
     end
 end
 
 function Tokenizer:tokenizeMultilineComment()
     local curr = self:peek(0)
-    while curr do
+    while curr and curr ~= "" do
         if curr == "*" and self:peek(1) == "/" then
             break
         end
@@ -121,7 +143,7 @@ function Tokenizer:tokenizeWord()
     local buff = ""
     local curr = self:peek(0)
     while true do
-        if not string.isLetterOrDigit(curr) and curr ~= "_" then
+        if not curr or not string.isLetterOrDigit(curr) and curr ~= "_" then
             break
         end
         buff = buff .. curr
@@ -154,14 +176,22 @@ function Tokenizer:tokenizeWord()
         return self:addToken(TOKENTYPES.CLASSCONSTRUCTOR)
     elseif buff == "new" then
         return self:addToken(TOKENTYPES.CLASSNEW)
-    elseif buff == "this" then
-        return self:addToken(TOKENTYPES.THIS)
+    elseif buff == "this" then 
+        buff = "self"
+    elseif buff == "static" then
+        return self:addToken(TOKENTYPES.STATIC)
     elseif buff == "async" then
         return self:addToken(TOKENTYPES.ASYNC)
     elseif buff == "await" then
         return self:addToken(TOKENTYPES.AWAIT)
     elseif buff == "continue" then
         return self:addToken(TOKENTYPES.CONTINUE)
+    elseif buff == "import" then
+        return self:addToken(TOKENTYPES.IMPORT)
+    elseif buff == "in" then
+        return self:addToken(TOKENTYPES.IN)
+    elseif buff == "var" or buff == "let" then
+        return self:addToken(TOKENTYPES.VAR)
     end
     
     self:addToken(TOKENTYPES.WORD, buff)
@@ -191,13 +221,11 @@ function Tokenizer:tokenizeString(startstr)
             buff = buff .. '\\'
             goto CONTINUE
         end
-        if curr == "$" and self:peek(1) == "{" then
-            self:addToken(TOKENTYPES.FSTRING)
-            self:wait(startstr, "}", TOKENTYPES.RBR)
-            break
-        end
         if curr == startstr then
             break
+        end
+        if curr == '"' then
+            buff = buff .. "\\"
         end
         buff = buff .. curr
         curr = self:next()
@@ -208,6 +236,50 @@ function Tokenizer:tokenizeString(startstr)
     self:next()
 end
 
+function Tokenizer:tokenizeFString(startstr)
+
+    local buff = ""
+    local curr = self:next()
+    while curr do
+
+        if curr == '\\' then
+            curr = self:next()
+            if curr == startstr then
+                buff = buff .. curr
+                curr = self:next()
+                goto CONTINUE
+            elseif curr == 'n' then
+                buff = buff .. "\n"
+                curr = self:next()
+                goto CONTINUE
+            elseif curr == 't' then
+                buff = buff .. '\t'
+                curr = self:next()
+                goto CONTINUE
+            end
+            buff = buff .. '\\'
+            goto CONTINUE
+        end
+        if curr == "$" and self:peek(1) == "{" then
+            self:addToken(TOKENTYPES.FSTRING)
+            self:next()
+            self:wait(startstr, "}", TOKENTYPES.RBR,"{")
+            break
+        end
+        if curr == startstr then
+            break
+        end
+        if curr == '"' then
+            buff = buff .. "\\"
+        end
+        buff = buff .. curr
+        curr = self:next()
+        ::CONTINUE::
+    end
+
+    self:addToken(TOKENTYPES.STRING, buff)
+    self:next()
+end
 function Tokenizer:tokenizeOperator()
     local curr = self:peek(0)
     if curr == "/" then
@@ -226,7 +298,7 @@ function Tokenizer:tokenizeOperator()
     end
     local buff = ""
     while curr do
-        if not OPERATOR_CHARS[buff .. curr] and buff ~= "" then
+        if curr == "" or not OPERATOR_CHARS[buff .. curr] and buff ~= "" then
             return self:addToken(OPERATOR_CHARS[buff])
         end
         buff = buff .. curr

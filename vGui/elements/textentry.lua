@@ -75,7 +75,6 @@ function element:paint(x, y, w, h)
     render.drawSimpleText(x+(self._align == 1 and w/2 or 0), y+(self._align == 1 and h/2 or 0), self:getText(),self._align,self._align)
     
 end
-
 -- STUB
 
 function element:onClick()

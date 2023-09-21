@@ -67,4 +67,13 @@ TOKENTYPES = {
     CLOSETBL = 54,
     ASYNC = 55,
     AWAIT = 56,
+    HEX = 57, -- 0xff
+    BINARY = 58,
+    VAR = 59,
+    IMPORT = 60,
+    FROM = 61,
+    KEYKARD = 62,
+    STATIC = 63,
+    PRIVATEVAR = 64,
+    IN = 65,
 }

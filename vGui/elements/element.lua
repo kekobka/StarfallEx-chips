@@ -1,11 +1,15 @@
--- @name base element
--- @author discord.gg/6Q5NnHQTrh -- kekobka -- STEAM_0:0:186583728
+---@name base element
+---@author discord.gg/6Q5NnHQTrh -- kekobka -- STEAM_0:0:186583728
 local element = class("vElement")
 
 function element.static.accessorFunc(tbl, varName, name, defaultValue)
     tbl[varName] = defaultValue
-    tbl["get" .. name] = function(self) return self[varName] end
-    tbl["set" .. name] = function(self, value) self[varName] = value end
+    tbl["get" .. name] = function(self)
+        return self[varName]
+    end
+    tbl["set" .. name] = function(self, value)
+        self[varName] = value
+    end
 end
 local function canProcess()
     return math.max(cpuTotalAverage(), cpuTotalUsed() / 4) < cpuMax() * 0.7
@@ -15,7 +19,9 @@ local function async(a)
     local workers = {}
     hook.add("think", "async." .. G, function()
         for Key, work in ipairs(workers) do
-            if not canProcess() then break end
+            if not canProcess() then
+                break
+            end
             try(work(Key))
         end
     end)
@@ -29,7 +35,9 @@ local function async(a)
         end)
     end
 end
-local ANIMATIONTHINK = async(function(f) return f() end)
+local ANIMATIONTHINK = async(function(f)
+    return f()
+end)
 element.static.accessorFunc(element, "_x", "X", 0)
 element.static.accessorFunc(element, "_y", "Y", 0)
 element.static.accessorFunc(element, "_w", "W", 0)
@@ -43,8 +51,9 @@ function element:initialize(gui)
     self._draggable = true
     self.matrix = Matrix()
 
-    if self.getFonts then self.fonts = self:getFonts() end
-
+    if self.getFonts then
+        self.fonts = self:getFonts()
+    end
 
     self._lock = nil
     self.m_bMouseEnabled = true
@@ -58,7 +67,12 @@ element._nextSibling = nil
 element._dockMargin = {0, 0, 0, 0}
 element._dockPadding = {0, 0, 0, 0}
 
-function element:AnimationThink(f) return ANIMATIONTHINK(f) end
+function element:AnimationThink(f)
+    return ANIMATIONTHINK(f)
+end
+function element:addEventListener(name, f)
+    self[name] = f
+end
 
 function element:setSize(w, h)
 
@@ -83,7 +97,9 @@ function element:setTall(h)
 end
 element.getTall = element.getH
 element.getWide = element.getW
-function element:getSize() return self:getW(), self:getH() end
+function element:getSize()
+    return self:getW(), self:getH()
+end
 
 function element:setPos(x, y)
 
@@ -96,18 +112,16 @@ function element:setPos(x, y)
     end
 end
 
-function element:getPos() return self:getX(), self:getY() end
+function element:getPos()
+    return self:getX(), self:getY()
+end
 
 function element:getBounds()
-    return self:getX(), self:getY(), self:getX() + self:getW(),
-           self:getY() + self:getH()
+    return self:getX(), self:getY(), self:getX() + self:getW(), self:getY() + self:getH()
 end
 
 function element:dockPadding(q, w, e, r)
-    self._dockPadding = {
-        q or self._dockPadding[1], w or self._dockPadding[2],
-        e or self._dockPadding[3], r or self._dockPadding[4]
-    }
+    self._dockPadding = {q or self._dockPadding[1], w or self._dockPadding[2], e or self._dockPadding[3], r or self._dockPadding[4]}
 end
 function element:dockMargin(a, s, d, f)
     self._dockMargin = {a, s, d, f}
@@ -134,46 +148,76 @@ function element:getAbsolutePos(x, y)
 end
 element.LocalToScreen = element.getAbsolutePos
 
-function element:centerVertical(frac) 
+function element:centerVertical(frac)
     frac = frac or 0.5
-    self:setY(self:getParent():getH() * frac - self:getH()/2)
+    self:setY(self:getParent():getH() * frac - self:getH() / 2)
 end
-function element:alignRight(offset) 
+function element:alignRight(offset)
     offset = offset or 0.5
     self:setX(self:getParent():getW() - self:getW() - offset)
 end
-function element:setMouseInputEnabled(b) 
+function element:setMouseInputEnabled(b)
     self.m_bMouseEnabled = b
 end
 
-function element:setParent(parent) self._parent = parent end
+function element:setParent(parent)
+    self._parent = parent
+end
 
-function element:getParent() return self._parent end
+function element:getParent()
+    return self._parent
+end
 
-function element:hasParent() return self:getParent() ~= nil end
+function element:hasParent()
+    return self:getParent() ~= nil
+end
 
-function element:setEnabled(enabled) self._enabled = enabled end
+function element:setEnabled(enabled)
+    self._enabled = enabled
+end
 
-function element:isEnabled() return self._enabled end
+function element:isEnabled()
+    return self._enabled
+end
 
-function element:setVisible(visible) self._visible = visible end
+function element:setVisible(visible)
+    self._visible = visible
+end
 
-function element:isVisible() return self._visible end
+function element:isVisible()
+    return self._visible
+end
 
-function element:setUsed(v) self._used = v end
+function element:setUsed(v)
+    self._used = v
+end
 
-function element:isUsed() return self._used end
+function element:isUsed()
+    return self._used
+end
 
-function element:setDraggable(draggable) self._draggable = draggable end
+function element:setDraggable(draggable)
+    self._draggable = draggable
+end
 
-function element:isDraggable() return self._draggable end
+function element:isDraggable()
+    return self._draggable
+end
 
-function element:isHovered() return self._hovered end
+function element:isHovered()
+    return self._hovered
+end
 
-function element:lock() self._lock = true end
+function element:lock()
+    self._lock = true
+end
 
-function element:unlock() self._lock = false end
-function element:isLocked() return self._lock end
+function element:unlock()
+    self._lock = false
+end
+function element:isLocked()
+    return self._lock
+end
 
 function element:remove()
     self:setVisible(false)
@@ -182,7 +226,7 @@ function element:remove()
     if self:hasParent() then
         self:getParent():removeChild(self)
     end
-    
+
 end
 function element:setSkin(skin)
     self:setColorScheme(skin.ColorScheme, true)
@@ -198,7 +242,9 @@ function element:addChild(child)
     else
         local temp = self._firstChild
 
-        while temp._nextSibling do temp = temp._nextSibling end
+        while temp._nextSibling do
+            temp = temp._nextSibling
+        end
 
         temp._nextSibling = child
         child._prevSibling = temp
@@ -208,17 +254,19 @@ end
 
 function element:removeChild(child)
 
-    if not child then return end
+    if not child then
+        return
+    end
 
     child:setParent(nil)
     -- if self._firstChild == child then
     --     self._firstChild = nil
     -- else
-        local prev = child._prevSibling or self
-        local next = child._nextSibling
-        -- if not prev then return end
-        -- prev._nextSibling = next
-        -- next._prevSibling = prev
+    local prev = child._prevSibling or self
+    local next = child._nextSibling
+    -- if not prev then return end
+    -- prev._nextSibling = next
+    -- next._prevSibling = prev
 
     -- end
 
@@ -226,7 +274,9 @@ end
 
 function element:dock(value, validate)
 
-    if not self:hasParent() then return throw("no parent to docking") end
+    if not self:hasParent() then
+        return throw("no parent to docking")
+    end
 
     local parent = self:getParent()
     local dx, dy, dw, dh = unpack(parent._dockPadding)
@@ -242,7 +292,9 @@ function element:dock(value, validate)
     self.docktype = value
 
     if value == 1 then -- FILL
-        if FILL then return throw("element:dock(FILL) is used", 1, true) end
+        if FILL then
+            -- return throw("element:dock(FILL) is used", 1, true)
+        end
         local x = LEFT
         local y = TOP
         local w = pw - dx - dw - RIGHT + (validate and rw or 0)
@@ -250,7 +302,9 @@ function element:dock(value, validate)
         self:setPos(x, y)
         self:setSize(w, h)
 
-        if not validate then parent._dockPadding_FILL = self end
+        if not validate then
+            parent._dockPadding_FILL = self
+        end
     elseif value == 2 then -- LEFT
 
         local dw0, dh0 = self:getSize()
@@ -261,7 +315,9 @@ function element:dock(value, validate)
         local h = ph - dy - dh - BOTTOM - TOP
         self:setPos(x, y)
         self:setSize(w, h)
-        if not validate then parent._dockPadding_LEFT = LEFT + dw0 end
+        if not validate then
+            parent._dockPadding_LEFT = LEFT + dw0
+        end
     elseif value == 3 then -- RIGHT
 
         local dw0, dh0 = self:getSize()
@@ -272,7 +328,9 @@ function element:dock(value, validate)
         local h = ph - dy - dh - BOTTOM - TOP
         self:setPos(x, y)
         self:setSize(w, h)
-        if not validate then parent._dockPadding_RIGHT = RIGHT + dw0 end
+        if not validate then
+            parent._dockPadding_RIGHT = RIGHT + dw0
+        end
     elseif value == 4 then -- TOP
 
         local dw0, dh0 = self:getSize()
@@ -283,7 +341,9 @@ function element:dock(value, validate)
         local h = dh0
         self:setPos(x, y)
         self:setSize(w, h)
-        if not validate then parent._dockPadding_TOP = TOP + dh0 end
+        if not validate then
+            parent._dockPadding_TOP = TOP + dh0
+        end
     elseif value == 5 then -- BOTTOM
 
         local dw0, dh0 = self:getSize()
@@ -294,15 +354,21 @@ function element:dock(value, validate)
         local h = dh0
         self:setPos(x, y)
         self:setSize(w, h)
-        if not validate then parent._dockPadding_BOTTOM = BOTTOM + dh0 end
+        if not validate then
+            parent._dockPadding_BOTTOM = BOTTOM + dh0
+        end
     end
-    if not validate then self:invalidateDock(parent) end
+    if not validate then
+        self:invalidateDock(parent)
+    end
     self:dockMargin(unpack(self._dockMargin))
 end
 
 function element:invalidateDock(parent)
 
-    if not parent._dockPadding_FILL then return end
+    if not parent._dockPadding_FILL then
+        return
+    end
     local dx, dy, dw, dh = unpack(parent._dockPadding)
     local pw, ph = parent:getSize()
 
@@ -319,8 +385,7 @@ function element:invalidateDock(parent)
 
     parent._dockPadding_FILL:setPos(x, y)
     parent._dockPadding_FILL:setSize(w, h)
-    parent._dockPadding_FILL:dockMargin(unpack(
-                                            parent._dockPadding_FILL._dockMargin))
+    parent._dockPadding_FILL:dockMargin(unpack(parent._dockPadding_FILL._dockMargin))
 end
 function element:cursorIntersect(x, y)
 
@@ -337,8 +402,7 @@ function element:center()
     local w, h = self:getSize()
     local dx0, dy0, dw0, dh0 = unpack(self:getParent()._dockPadding)
 
-    self:setPos(dw / 2 - w / 2 - (dw0 + dx0) / 2,
-                dh / 2 - h / 2 - (dh0 + dy0) / 2)
+    self:setPos(dw / 2 - w / 2 - (dw0 + dx0) / 2, dh / 2 - h / 2 - (dh0 + dy0) / 2)
 end
 function element:setColorScheme(scheme, overwrite)
     if overwrite or not self._colorScheme then
@@ -348,11 +412,17 @@ function element:setColorScheme(scheme, overwrite)
     end
 end
 
-function element:getColorScheme() return self._colorScheme or {} end
+function element:getColorScheme()
+    return self._colorScheme or {}
+end
 
-function element:getFonts() return self.fonts end
+function element:getFonts()
+    return self.fonts
+end
 
-function element:notChangeColorBorderOnHover() self._changeColorBorderOnHover = true  end
+function element:notChangeColorBorderOnHover()
+    self._changeColorBorderOnHover = true
+end
 
 function element:getColorFromScheme(key)
 
@@ -380,7 +450,9 @@ function element:moveToFront(child)
         if prev then
             prev._nextSibling = next
 
-            if next then next._prevSibling = prev end
+            if next then
+                next._prevSibling = prev
+            end
         else
             return
         end
@@ -398,7 +470,9 @@ function element:toAllChild(fn)
     while temp do
         local next = temp._nextSibling
 
-        if fn(temp) then return temp end
+        if fn(temp) then
+            return temp
+        end
 
         temp = next
     end
@@ -432,7 +506,9 @@ function element:_postEventToAll(eventKey, ...)
     while temp do
         local next = temp._nextSibling
 
-        if temp:_postEvent(eventKey, ...) then return temp end
+        if temp:_postEvent(eventKey, ...) then
+            return temp
+        end
 
         temp = next
     end
@@ -443,7 +519,9 @@ end
 function element:_postEventToAllReverse(eventKey, ...)
     local next = self._nextSibling
 
-    if next then next:_postEventToAllReverse(eventKey, ...) end
+    if next then
+        next:_postEventToAllReverse(eventKey, ...)
+    end
 
     self:_postEvent(eventKey, ...)
 
@@ -479,10 +557,8 @@ end
 
 function element:_onMousePressed(x, y, key, keyName)
 
-    if self:cursorIntersect(x, y) and self:isEnabled() and self:isVisible() and
-        not self:isLocked() and self.m_bMouseEnabled then
-        local element =
-            self:_postEventToAll("MOUSE_PRESSED", x, y, key, keyName)
+    if self:cursorIntersect(x, y) and self:isEnabled() and self:isVisible() and not self:isLocked() and self.m_bMouseEnabled then
+        local element = self:_postEventToAll("MOUSE_PRESSED", x, y, key, keyName)
 
         if not element then
             self:onMousePressed(x, y, key, keyName)
@@ -499,12 +575,12 @@ function element:_onMousePressed(x, y, key, keyName)
 end
 
 function element:_onMouseReleased(x, y, key, keyName)
-    if self:cursorIntersect(x, y) and self:isEnabled() and self:isVisible() and
-        not self:isLocked() and self.m_bMouseEnabled then
-        local element = self:_postEventToAll("MOUSE_RELEASED", x, y, key,
-                                             keyName)
+    if self:cursorIntersect(x, y) and self:isEnabled() and self:isVisible() and not self:isLocked() and self.m_bMouseEnabled then
+        local element = self:_postEventToAll("MOUSE_RELEASED", x, y, key, keyName)
 
-        if not element then self:onMouseReleased(x, y, key, keyName) end
+        if not element then
+            self:onMouseReleased(x, y, key, keyName)
+        end
 
         return true
     else
@@ -512,12 +588,12 @@ function element:_onMouseReleased(x, y, key, keyName)
     end
 end
 function element:_onMouseWheeled(x, y, key, keyName)
-    if self:cursorIntersect(x, y) and self:isEnabled() and self:isVisible() and
-        not self:isLocked() and self.m_bMouseEnabled then
-        local element =
-            self:_postEventToAll("MOUSE_WHEELED", x, y, key, keyName)
+    if self:cursorIntersect(x, y) and self:isEnabled() and self:isVisible() and not self:isLocked() and self.m_bMouseEnabled then
+        local element = self:_postEventToAll("MOUSE_WHEELED", x, y, key, keyName)
 
-        if not element then self:onMouseWheeled(x, y, key, keyName) end
+        if not element then
+            self:onMouseWheeled(x, y, key, keyName)
+        end
 
         return true
     else
@@ -552,9 +628,11 @@ function element:_onMouseMoved(x, y)
     return false
 end
 
-function element:_onButtonPressed(key, keyName) end
+function element:_onButtonPressed(key, keyName)
+end
 
-function element:_onButtonReleased(key, keyName) end
+function element:_onButtonReleased(key, keyName)
+end
 
 function element:add(classname)
     return self.gui:add(classname, self)
@@ -562,31 +640,45 @@ end
 
 -- STUB
 
-function element:performLayout(w, h) end
+function element:performLayout(w, h)
+end
 
-function element:invalidateLayout() self:performLayout(self:getSize()) end
+function element:invalidateLayout()
+    self:performLayout(self:getSize())
+end
 
-function element:think() end
+function element:think()
+end
 
-function element:paint(x, y, w, h) end
+function element:paint(x, y, w, h)
+end
 
-function element:postChildPaint(x, y, w, h) end
+function element:postChildPaint(x, y, w, h)
+end
 
-function element:onMousePressed(x, y, key, keyName) end
+function element:onMousePressed(x, y, key, keyName)
+end
 
-function element:onMouseReleased(x, y, key, keyName) end
+function element:onMouseReleased(x, y, key, keyName)
+end
 
-function element:onMouseMoved(x, y) end
+function element:onMouseMoved(x, y)
+end
 
-function element:onMouseEnter() end
+function element:onMouseEnter()
+end
 
-function element:onMouseLeave() end
+function element:onMouseLeave()
+end
 
-function element:onButtonPressed(key, keyName) end
+function element:onButtonPressed(key, keyName)
+end
 
-function element:onButtonReleased(key, keyName) end
+function element:onButtonReleased(key, keyName)
+end
 
-function element:onMouseWheeled(x, y, key, keyName) end
+function element:onMouseWheeled(x, y, key, keyName)
+end
 
 return element
 

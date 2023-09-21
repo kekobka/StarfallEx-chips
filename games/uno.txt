@@ -19,9 +19,11 @@ local Task = require('libs/Task.txt')
 MIN_PLAYERS = 2
 MAX_PLAYERS = 4
 if SERVER then
-    --@include libs/e2core.txt
+--[[
+    ---@include libs/e2core.txt
     local e2core = require('libs/e2core.txt')
     holo = e2core:new()
+]]
 
     local function createSeat(Pos, ang)
         return prop.createSeat(Pos + ang:getForward() * 45, ang + Angle(0,90,0), "models/nova/chair_office02.mdl", true)
@@ -68,7 +70,7 @@ if SERVER then
         end
         net.writeBit(0)
         net.send(nil, false)
-        local Table = holo.create(chip():getPos() + Vector(0,0,25),Angle(),"cube")
+        local Table = hologram.create(chip():getPos() + Vector(0,0,25),Angle(),"models/holograms/cube.mdl")
         Table:setScale(Vector(5,5,0.1))
         Table:setColor(Color(85, 107, 47, 255))
         
