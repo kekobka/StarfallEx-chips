@@ -1,4 +1,4 @@
-local Button = require("Button")
+local Button = require("elements/Button")
 
 local Combobox = class("VUI.Combobox", Button)
 

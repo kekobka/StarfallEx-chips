@@ -1,4 +1,4 @@
-local Label = require("Label")
+local Label = require("elements/Label")
 
 local Button = class("VUI.Button", Label)
 
