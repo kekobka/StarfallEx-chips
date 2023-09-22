@@ -1,4 +1,4 @@
-local ListLayout = require("./ListLayout.lua")
+local ListLayout = require("ListLayout")
 
 local ScrollPanel = class("VUI.ScrollPanel", ListLayout)
 

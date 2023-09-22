@@ -1,4 +1,4 @@
-local Label = require("./Label.lua")
+local Label = require("Label")
 
 local Button = class("VUI.Button", Label)
 
