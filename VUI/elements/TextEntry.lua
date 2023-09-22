@@ -1,4 +1,4 @@
-local Label = require("elements/Label")
+local Label = require("./Label.lua")
 
 local TextEntry = class("VUI.TextEntry", Label)
 
