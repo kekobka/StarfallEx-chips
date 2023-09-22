@@ -49,6 +49,7 @@ function UI:initialize(device)
     local _root = ELEMENTS.root(self)
     local dummyclr = Color(0, 0, 0, 0)
     local function paint()
+        if not self.isVisible() then return end
         _root:_postEventToAllReverseRender(0, 0, _resx, _resy)
     end
     self.paint = paint
@@ -93,11 +94,14 @@ function UI:initialize(device)
     function self.setVisible(b)
         _root:setVisible(b)
     end
+    function self.isVisible()
+        return _root:isVisible()
+    end
     hook.add("InputPressed", "VUI.InputPressed." .. address(self), function(key)
-
+        
         if device == "hud" and input.getKeyName(key) == self.openkey then
             input.enableCursor(not input.getCursorVisible())
-            self:setVisible(input.getCursorVisible())
+            self.setVisible(input.getCursorVisible())
         end
         if not hasPermission("input") or (device == "hud" and not input.getCursorVisible()) then
             return
