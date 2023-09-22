@@ -49,12 +49,14 @@ function UI:initialize(device)
     local _root = ELEMENTS.root(self)
     local dummyclr = Color(0, 0, 0, 0)
     local function paint()
-        if not self.isVisible() then return end
+        if not self.isVisible() then
+            return
+        end
         _root:_postEventToAllReverseRender(0, 0, _resx, _resy)
     end
     self.paint = paint
     if CLIENT then
-        if self.device == "hud" then
+        if device == "hud" then
             _resx, _resy = render.getResolution()
             function self.render()
                 paint()
@@ -76,8 +78,16 @@ function UI:initialize(device)
                 render.drawTexturedRect(0, 0, _resx / 2, _resy / 2)
             end
         end
-        function self.setCustomRender(bool)
-            _customRender = bool
+
+        if device == "hud" then
+            hook.add("postdrawhud", "VUI.RENDER." .. address(self), self.paint)
+        else
+            hook.add("render", "VUI.RENDER." .. address(self), self.render)
+        end
+
+        function self.customRender()
+            hook.remove("postdrawhud", "VUI.RENDER." .. address(self))
+            hook.remove("render", "VUI.RENDER." .. address(self))
         end
         function self.isCustomRender()
             return _customRender == true
@@ -98,7 +108,7 @@ function UI:initialize(device)
         return _root:isVisible()
     end
     hook.add("InputPressed", "VUI.InputPressed." .. address(self), function(key)
-        
+
         if device == "hud" and input.getKeyName(key) == self.openkey then
             input.enableCursor(not input.getCursorVisible())
             self.setVisible(input.getCursorVisible())
@@ -160,7 +170,9 @@ function UI:initialize(device)
         end
 
         local x, y = self:getCursor()
-        if huge == x or huge == y then return end
+        if huge == x or huge == y then
+            return
+        end
         if x and y and (x ~= _lastMouseX or y ~= _lastMouseY) then
             _lastMouseX = x
             _lastMouseY = y
