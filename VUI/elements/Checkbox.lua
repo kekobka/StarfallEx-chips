@@ -43,19 +43,6 @@ function Checkbox:onMousePressed(x, y, key, keyName)
     end
 end
 
-function Checkbox:setText(text)
-    self._text = tostring(text)
-
-    if self:getFont() then
-        render.setFont(self:getFont())
-
-        self._textWidth, self._textHeight = render.getTextSize(text)
-    else
-        render.setFont(render.getDefaultFont())
-        self._textWidth, self._textHeight = render.getTextSize(text)
-    end
-    return self
-end
 function Checkbox:onMouseReleased(x, y, key, keyName)
     if key == MOUSE.MOUSE1 or key == MOUSE.MOUSE2 and self:isUsed() then
         if key == MOUSE.MOUSE1 then

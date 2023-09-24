@@ -28,7 +28,7 @@ function Frame:initialize(UI)
     self.minmaxButton.onClick = function()
         self:minimax()
     end
-
+    self:dockPadding(0, 32, 0, 0)
     self:setSize(500, 500)
 end
 -- local gU = Material("vgui/gradient_up")

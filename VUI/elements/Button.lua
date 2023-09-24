@@ -2,6 +2,8 @@ local Label = require("./Label.lua")
 
 local Button = class("VUI.Button", Label)
 
+accessorFunc(Element, "m_bDrawBorder", "DrawBorder", true)
+
 function Button:initialize(UI)
     Label.initialize(self, UI)
     self.alignX = 1
@@ -11,8 +13,10 @@ function Button:initialize(UI)
 end
 function Button:paint(x, y, w, h)
     local round = self:getRounded()
-    render.setColor(self:getColorScheme("bghover"))
-    render.drawRoundedBox(round, x, y, w, h)
+    if self.m_bDrawBorder then
+        render.setColor(self:getColorScheme("bghover"))
+        render.drawRoundedBox(round, x, y, w, h)
+    end
     render.setColor(self:isHovered() and self:getColorScheme("bghover") or self:getColorScheme("bg"))
     render.drawRoundedBox(round, x + 1, y + 1, w - 2, h - 2)
     render.setColor(self:getColorScheme("text"))
