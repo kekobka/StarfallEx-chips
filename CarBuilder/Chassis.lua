@@ -55,7 +55,7 @@ end
 
 Chassis.createWheel = async* function(self, pos, ang)
 
-    local wheel = await* prop.create(self.base:localToWorld(pos), ang, "models/sprops/trans/wheel_d/t_wheel25.mdl", true)
+    local wheel = await* prop.createAsync(self.base:localToWorld(pos), ang, "models/sprops/trans/wheel_d/t_wheel25.mdl", true)
     constraint.nocollide(wheel, self.base)
     wheel:setMass(80)
     wheel:enableSphere(true)
@@ -64,7 +64,7 @@ Chassis.createWheel = async* function(self, pos, ang)
     wheel:enableDrag(false)
     wheel:getPhysicsObject():enableMotion(false)
 
-    local plate = await* prop.create(wheel:localToWorld(Vector(0, 0, 25)), self.base:localToWorldAngles(Angle(0, 0, 0)), "models/hunter/plates/plate025.mdl", true)
+    local plate = await* prop.createAsync(wheel:localToWorld(Vector(0, 0, 25)), self.base:localToWorldAngles(Angle(0, 0, 0)), "models/hunter/plates/plate025.mdl", true)
     plate:enableMotion(true)
     plate:getPhysicsObject():sleep()
     plate:setNocollideAll(true)
@@ -104,7 +104,7 @@ Chassis.createAxle = async* function(self, pos, ang)
     }
 end
 Chassis.createSeat = async* function(self, pos, ang)
-    local seat = await* prop.createSeat(self.base:localToWorld(pos), self.base:localToWorldAngles(ang), "models/nova/chair_office02.mdl", true)
+    local seat = await* prop.createSeatAsync(self.base:localToWorld(pos), self.base:localToWorldAngles(ang), "models/nova/chair_office02.mdl", true)
     seat:setParent(self.base)
     seat:setSolid(true)
     seat:setNocollideAll(true)
