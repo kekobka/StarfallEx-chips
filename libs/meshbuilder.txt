@@ -267,7 +267,17 @@ if SERVER then
                     v.holo:setMesh(self.meshData[name])
                     v.holo:setColor(color)
                     local mat = v.mat
-                    v.mat = self:_createMaterial(mat.shader, mat.basetexture, mat.bumpmap, mat.options)
+                    if isURL(mat.basetexture) then       
+                        v.mat = self:_createMaterial(mat.shader, mat.basetexture, mat.bumpmap, mat.options)
+                    else
+                        hasErr, mat = pcall(material.load, mat.basetexture)
+        
+                        if not hasErr then
+                            v.mat = material.load("models/debug/debugwhite")
+                        else
+                            v.mat = mat
+                        end
+                    end
                     if v.mat then v.holo:setMeshMaterial(v.mat) end
         
                     v.meshApplied = true
