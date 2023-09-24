@@ -1,11 +1,13 @@
 -- local Label = require("./Label.lua")
-
 local Checkbox = class("VUI.Checkbox", Element)
 
-function Checkbox:initialize()
-    Checkbox.super.initialize(self)
+function Checkbox:initialize(UI, b)
+    Checkbox.super.initialize(self, UI, true)
     self._checked = false
     self:setSize(16, 16)
+    if not b then
+        self:init()
+    end
 end
 function Checkbox:paint(x, y, w, h)
     local round = self:getRounded()

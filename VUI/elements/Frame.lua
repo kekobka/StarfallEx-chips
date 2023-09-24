@@ -1,7 +1,7 @@
 local Frame = class("VUI.Frame", Element)
 
-function Frame:initialize(UI)
-    Frame.super.initialize(self, UI)
+function Frame:initialize(UI, b)
+    Frame.super.initialize(self, UI, true)
     self._draggable = true
     self.title = self:add("label")
     self.title:setText("Frame")
@@ -30,6 +30,9 @@ function Frame:initialize(UI)
     end
     self:dockPadding(0, 32, 0, 0)
     self:setSize(500, 500)
+    if not b then
+        self:init()
+    end
 end
 -- local gU = Material("vgui/gradient_up")
 -- local gD = Material("vgui/gradient_down")
@@ -169,7 +172,7 @@ function Frame:performLayout(w, h)
     self.title:setPos(12, 6)
 end
 function Frame:GenerateExample()
-    self:setSize(800,800)
+    self:setSize(800, 800)
     local butt = self:add("Button")
     butt:setY(32)
     local comboBox = self:add("ComboBox")

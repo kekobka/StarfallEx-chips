@@ -1,12 +1,15 @@
 local Label = class("VUI.Label", Element)
 
-function Label:initialize(UI)
-    Label.super.initialize(self, UI)
+function Label:initialize(UI, b)
+    Label.super.initialize(self, UI, true)
     self.alignX = 0
     self.alignX = 0
     self:setText("Label")
     self:setFont(self.UI.FONTS.main)
     self:sizeToContents()
+    if not b then
+        self:init()
+    end
 end
 function Label:onMousePressed(x, y, key, keyName)
 

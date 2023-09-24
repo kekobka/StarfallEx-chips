@@ -6,12 +6,15 @@ accessorFunc(TextEntry, "m_bPlaceholder", "Placeholder", "TextEntry")
 accessorFunc(TextEntry, "m_bXOffset", "XOffset", 1)
 accessorFunc(TextEntry, "m_bYOffset", "YOffset", 0)
 
-function TextEntry:initialize(UI)
-    Label.initialize(self, UI)
+function TextEntry:initialize(UI, b)
+    Label.initialize(self, UI, true)
     self.alignX = 0
     self.alignY = 1
     self:setText(self:getPlaceholder())
     self:setSize(100, 48)
+    if not b then
+        self:init()
+    end
 end
 
 function TextEntry:paint(x, y, w, h)

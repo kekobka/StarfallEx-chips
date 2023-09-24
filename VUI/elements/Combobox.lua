@@ -2,8 +2,8 @@ local Button = require("./Button.lua")
 
 local Combobox = class("VUI.Combobox", Button)
 
-function Combobox:initialize(UI)
-    Button.initialize(self, UI)
+function Combobox:initialize(UI, b)
+    Button.initialize(self, UI, true)
     self.alignX = 0
     self.alignY = 1
     self:setText("ComboBox")
@@ -12,6 +12,9 @@ function Combobox:initialize(UI)
     self.list:setY(24)
     -- self.list:setParent(self)
     self:closeList()
+    if not b then
+        self:init()
+    end
 end
 function Combobox:paint(x, y, w, h)
     local round = self:getRounded()

@@ -7,12 +7,15 @@ accessorFunc(Element, "_H", "H", 0)
 accessorFunc(Element, "m_bUsed", "Used", false)
 accessorFunc(Element, "m_bEnabled", "Enabled", true)
 
-function Element:initialize(UI)
+function Element:initialize(UI, b)
     self.UI = UI
     self._visible = true
     self._enabled = true
     self.m_bDockPadding = {0, 0, 0, 0}
     self.m_bDockMargin = {0, 0, 0, 0}
+    if not b then
+        self:init()
+    end
 end
 
 Element._parent = nil
@@ -136,7 +139,7 @@ function Element:dock(value)
     local parent = self:getParent()
     local Px, Py, Pw, Ph = unpack(parent.m_bDockPadding)
     local Mx, My, Mw, Mh = unpack(self.m_bDockMargin)
-
+    
     local pw, ph = parent:getSize()
     -- local sw, sh = self:getSize()
 
@@ -158,20 +161,20 @@ function Element:dock(value)
 
         local x = _LEFT + Mx + Px
         local y = _TOP + My + Py
-        local w = w0 - Mw
+        local w = w0
         local h = ph - Py - Ph - _BOTTOM - _TOP - My - Mh
         self:setPos(x, y)
-        self:setSize(w, h)
+        self:setSize(w - Mw, h)
         parent._dockPadding_LEFT = _LEFT + w0
     elseif value == RIGHT then
         local w0, h0 = self:getSize()
 
         local x = pw - Pw - w0 - _RIGHT
         local y = _TOP + Mx + Px
-        local w = w0 - Mw
+        local w = w0
         local h = ph - Py - Ph - _BOTTOM - _TOP - My - Mh
         self:setPos(x, y)
-        self:setSize(w, h)
+        self:setSize(w - Mw, h)
         parent._dockPadding_RIGHT = _RIGHT + w0
     elseif value == TOP then
         local w0, h0 = self:getSize()
@@ -179,9 +182,9 @@ function Element:dock(value)
         local x = _LEFT + Mx + Px
         local y = _TOP + My + Py
         local w = pw - Px - Pw - _RIGHT - _LEFT - Mx - Mw
-        local h = h0 - Mh
+        local h = h0
         self:setPos(x, y)
-        self:setSize(w, h)
+        self:setSize(w, h - Mh)
         parent._dockPadding_TOP = _TOP + h0
     elseif value == BOTTOM then
 
@@ -190,9 +193,9 @@ function Element:dock(value)
         local x = _LEFT + Mx + Px
         local y = ph - Ph - h0 - _BOTTOM
         local w = pw - Px - Pw - _RIGHT - _LEFT - Mx - Mw
-        local h = h0 - Mh
+        local h = h0
         self:setPos(x, y)
-        self:setSize(w, h)
+        self:setSize(w, h - Mh)
         parent._dockPadding_BOTTOM = _BOTTOM + h0
     end
     return self
@@ -326,6 +329,15 @@ function Element:_postEventToAllReverseRender(x, y, w, h)
 
     return nil
 end
+function Element:_postEventToAllReverseThink()
+    local next = self._nextSibling
+
+    if next then next:_postEventToAllReverseThink() end
+
+    self:_onThink()
+
+    return nil
+end
 local max, min = math.max, math.min
 function Element:_onRender(X, Y, W, H)
     if not self:isVisible() then
@@ -389,7 +401,7 @@ function Element:_onButtonReleased(key, keyName)
 end
 
 function Element:_onMouseWheeled(x, y, key, keyName)
-    if self:cursorIntersect(x, y) and self:isVisible() then
+    if self:cursorIntersect(x, y) and self:isVisible() and self:isEnabled() then
         local element = self:_postEventToAll(EVENT.MOUSE_WHEELED, x, y, key, keyName)
 
         if not element then
@@ -407,18 +419,18 @@ function Element:_onMouseMoved(x, y)
     if self:isEnabled() and self:isVisible() then
         if self:cursorIntersect(x, y) then
             self:onMouseMoved(x, y)
-
+            self:mouseMoved(x, y)
             if not self:isHovered() then
                 self._hovered = true
 
-                self:onMouseEnter()
+                self:_onMouseEnter()
             end
 
         else
             if self:isHovered() then
                 self._hovered = false
 
-                self:onMouseLeave()
+                self:_onMouseLeave()
             end
 
         end
@@ -428,6 +440,13 @@ function Element:_onMouseMoved(x, y)
 end
 
 function Element:_onThink()
+    if self:isEnabled() and self:isVisible() then
+        self:think()
+
+        if self._firstChild then
+            self._firstChild:_postEventToAllReverseThink()
+        end
+    end
 end
 function Element:think()
 end
@@ -446,11 +465,25 @@ end
 
 function Element:onMouseMoved(x, y)
 end
-
-function Element:onMouseEnter()
+function Element:mouseMoved(x, y)
 end
 
+function Element:_onMouseEnter()
+    self:onMouseEnter()
+    self:onEnter()
+end
+function Element:onMouseEnter()
+end
+function Element:onEnter()
+end
+
+function Element:_onMouseLeave()
+    self:onMouseLeave()
+    self:onLeave()
+end
 function Element:onMouseLeave()
+end
+function Element:onLeave()
 end
 
 function Element:onButtonPressed(key, keyName)
@@ -463,6 +496,8 @@ function Element:onMouseWheeled(x, y, key, keyName)
 end
 
 function Element:performLayout(w, h)
+end
+function Element:init()
 end
 
 function Element:invalidateLayout()

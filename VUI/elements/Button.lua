@@ -4,12 +4,15 @@ local Button = class("VUI.Button", Label)
 
 accessorFunc(Element, "m_bDrawBorder", "DrawBorder", true)
 
-function Button:initialize(UI)
-    Label.initialize(self, UI)
+function Button:initialize(UI, b)
+    Label.initialize(self, UI, true)
     self.alignX = 1
     self.alignY = 1
     self:setText("Button")
     self:setSize(100, 48)
+    if not b then
+        self:init()
+    end
 end
 function Button:paint(x, y, w, h)
     local round = self:getRounded()
@@ -17,7 +20,11 @@ function Button:paint(x, y, w, h)
         render.setColor(self:getColorScheme("bghover"))
         render.drawRoundedBox(round, x, y, w, h)
     end
-    render.setColor(self:isHovered() and self:getColorScheme("bghover") or self:getColorScheme("bg"))
+    if not self._color then
+        render.setColor(self:isHovered() and self:getColorScheme("bghover") or self:getColorScheme("bg"))
+    else
+        render.setColor(self._color)
+    end
     render.drawRoundedBox(round, x + 1, y + 1, w - 2, h - 2)
     render.setColor(self:getColorScheme("text"))
     render.setFont(self._font)
@@ -26,6 +33,10 @@ end
 function Button:getRounded()
     return UI._Skin.Button.rounded
 end
+function Button:setColor(v)
+    self._color = v
+end
+
 function Button:onMousePressed(x, y, key, keyName)
 
     if key == MOUSE.MOUSE1 or key == MOUSE.MOUSE2 and not self._lock then
@@ -81,7 +92,5 @@ end
 function Button:setAlignY(Y)
     self.alignY = Y
 end
-
-
 
 return Button

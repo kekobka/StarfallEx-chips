@@ -3,12 +3,12 @@ local ListLayout = require("./ListLayout.lua")
 local ScrollPanel = class("VUI.ScrollPanel", ListLayout)
 
 local remap, max, clamp = math.remap, math.max, math.clamp
-function ScrollPanel:initialize(UI)
-    ListLayout.initialize(self, UI)
+function ScrollPanel:initialize(UI, b)
+    ListLayout.initialize(self, UI, true)
     self.m_bSlider = self:add("Slider")
     self.m_bSlider:setVertical(true)
     self.m_bSlider:setPos(200 - self.m_bSlider:getW(), 0)
-    
+
     self._list = {}
     self._listpos = 0
     self:setSize(200, 200)
@@ -34,6 +34,9 @@ function ScrollPanel:initialize(UI)
 
         self:onMouseWheeled(x, y, key, keyName, child)
 
+    end
+    if not b then
+        self:init()
     end
 end
 function ScrollPanel:getRounded()
@@ -78,9 +81,9 @@ function ScrollPanel:onScroll(value)
 
     local w = 0
     for _, el in next, self._list do
-        local Y = w - value * max((self._lastFH - self:getH() + el:getH()), 0)
-        el:setY(Y)
-        local H = el:getH()
+        local Y = w - value * max((self._lastFH - self:getH() + el:getH() ), 0)
+        el:setY(Y + el.m_bDockMargin[2])
+        local H = el:getH() + el.m_bDockMargin[2] + el.m_bDockMargin[4]
         if Y >= self:getH() or 0 > Y + H then
             el:setVisible(false)
         else
@@ -102,7 +105,9 @@ function ScrollPanel:setSize(w, h)
     self:invalidateLayout()
 end
 function ScrollPanel:performLayout(w, h)
-    if not self.m_bSlider then return end
+    if not self.m_bSlider then
+        return
+    end
     self.m_bSlider:setPos(w - self.m_bSlider:getW() - 2, 1)
     self.m_bSlider:setH(h - 2)
 end

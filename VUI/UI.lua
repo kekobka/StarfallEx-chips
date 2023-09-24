@@ -28,7 +28,7 @@ end
 Element = nil
 local FONTS = {
     icons = render.createFont("Segoe MDL2 Assets", 18, 400, true, true, true, false, 0, true, 0),
-    main = render.createFont("Calibri", 24, 400, true, true, true, false, 0, true, 0)
+    main = render.createFont("Calibri", 24, 401, true, true, true, false, 0, true, 0)
 }
 
 UI.FONTS = FONTS

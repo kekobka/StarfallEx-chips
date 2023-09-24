@@ -1,4 +1,4 @@
-
+---@name VUI/I
 
 ---@include https://github.com/kekobka/StarfallEx/raw/main/VUI/utils.lua as ./utils.lua
 ---@include https://github.com/kekobka/StarfallEx/raw/main/VUI/Skin.lua as ./Skin.lua

@@ -3,11 +3,13 @@ local Slider = class("VUI.Slider", Element)
 accessorFunc(Slider, "m_bValue", "Value", 0.5)
 accessorFunc(Slider, "m_bVertical", "Vertical", false)
 
-function Slider:initialize(UI)
-    Slider.super.initialize(self, UI)
+function Slider:initialize(UI, b)
+    Slider.super.initialize(self, UI, true)
     self:setSize(200, 8)
     self.m_bLerp = 0
-
+    if not b then
+        self:init()
+    end
 end
 function Slider:setVertical(b)
 
@@ -17,7 +19,7 @@ function Slider:setVertical(b)
     self.m_bVertical = b
 end
 function Slider:paint(x, y, w, h)
-    self.m_bLerp = math.clamp(self.m_bLerp + ((self:isHovered() or self:isUsed()) and 4 or -4) * timer.frametime() , 0, 1)
+    self.m_bLerp = math.clamp(self.m_bLerp + ((self:isHovered() or self:isUsed()) and 4 or -4) * timer.frametime(), 0, 1)
     if self.m_bVertical then
         local h = h - 10
         local y = y + 5
@@ -43,6 +45,47 @@ function Slider:paint(x, y, w, h)
         render.setColor(clr * self.m_bLerp)
         render.drawFilledCircle(x + offset, v, 4)
     end
+    if self.m_bTooltip_enabled then
+        local x = self.UI:getCursor()
+        self.m_bTooltip:setPos(x - self.m_bTooltip:getW() / 2, y + h / 2 - self.m_bTooltip:getH() - 6)
+    end
+end
+
+function Slider:enableTooltip()
+    self.m_bTooltip = self.UI:add("Label")
+    function self.m_bTooltip.paint(l, x, y, w, h)
+
+        render.setColor(self:getColorScheme("bghover") * 0.8)
+        render.drawRoundedBox(6, x + 1, y + 1, w - 2, h - 2)
+        render.setColor(self:getColorScheme("text") * 0.8)
+        render.setFont(l._font)
+        render.drawSimpleText(x, y, l._text, 0, 0)
+    end
+    self.m_bTooltip:disable()
+    self.m_bTooltip:setText("ToolTip")
+    self.m_bTooltip:setVisible(false)
+end
+function Slider:onMouseEnter()
+    if not self.m_bTooltip then
+        return
+    end
+    self.m_bTooltip_enabled = true
+    local x, y = self.UI:getCursor()
+    local _, Y = self:getAbsolutePos()
+
+    self.m_bTooltip:setPos(x - self.m_bTooltip:getW() / 2, Y - self.m_bTooltip:getH())
+    self.m_bTooltip:setVisible(true)
+    self.m_bTooltip:getParent():moveToFront(self.m_bTooltip)
+end
+function Slider:onMouseLeave()
+    if not self.m_bTooltip then
+        return
+    end
+    self.m_bTooltip_enabled = false
+    self.m_bTooltip:setVisible(false)
+end
+function Slider:disableTooltip()
+    self.m_bTooltip:setVisible(false)
 end
 
 function Slider:onMousePressed(x, y, key, keyName)
