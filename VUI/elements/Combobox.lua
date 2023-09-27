@@ -31,7 +31,7 @@ function Combobox:paint(x, y, w, h)
 end
 function Combobox:onMousePressed(x, y, key, keyName)
 
-    if key == MOUSE.MOUSE1 or key == MOUSE.MOUSE2 and not self._lock then
+    if (key == MOUSE.MOUSE1 or key == MOUSE.MOUSE2) and not self._lock then
         self:setUsed(true)
         self:_onUse(true, x, y, key, keyName)
         self:onUse(true)

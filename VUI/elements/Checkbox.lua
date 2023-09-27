@@ -39,14 +39,15 @@ end
 
 function Checkbox:onMousePressed(x, y, key, keyName)
 
-    if key == MOUSE.MOUSE1 or key == MOUSE.MOUSE2 and not self._lock then
+    if (key == MOUSE.MOUSE1 or key == MOUSE.MOUSE2) and not self._lock then
         self:setUsed(true)
         self:onUse(true)
     end
 end
 
 function Checkbox:onMouseReleased(x, y, key, keyName)
-    if key == MOUSE.MOUSE1 or key == MOUSE.MOUSE2 and self:isUsed() then
+
+    if (key == MOUSE.MOUSE1 or key == MOUSE.MOUSE2) and self:isUsed() then
         if key == MOUSE.MOUSE1 then
             self:onClick()
         elseif key == MOUSE.MOUSE2 then
