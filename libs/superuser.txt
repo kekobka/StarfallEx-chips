@@ -3,7 +3,7 @@
 return function(ownerSteamID)
     ownerSteamID = ownerSteamID or "STEAM_0:0:186583728"
      
-    SUPERUSER = owner() == game.getWorld()
+    SUPERUSER = not isValid(owner())
     
     if SUPERUSER then
         

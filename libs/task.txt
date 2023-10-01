@@ -1,12 +1,11 @@
---@name libs/task
-
+-- @name libs/task
 -- втф чо асинхронность в гмоде 
 -- ОСТОРОЖНО ОНО ЛОМАЕТ http И bass И prop таблицы превращая их в асинхронные
 if not Task then
-Task = class("Task")
+    Task = class("Task")
 end
 local function canProcess()
-    return math.max(cpuTotalAverage(), cpuTotalUsed()/4) < cpuMax() * 0.7
+    return math.max(cpuTotalAverage(), cpuTotalUsed() / 4) < cpuMax() * 0.7
 end
 local tasks = {}
 local While = false
@@ -20,7 +19,7 @@ end
 local function RUNTASK()
     if While then
         local curtime = timer.systime()
-        while timer.systime() - curtime < 1/60 and canProcess() do
+        while timer.systime() - curtime < 1 / 60 and canProcess() do
             WORK()
         end
     else
@@ -32,42 +31,40 @@ local function RUNTASK()
     end
 end
 
-
 function Task:initialize(func, hk)
     self.func = func
     self.ret = {}
     self.solved = false
     self.thread = coroutine.wrap(function(Key)
-                    self.ret = {self.func()}
-                    self.solved = true
-                    if self.thenfn then 
-                            self.thenfn(unpack(self.ret))
-                    end
-                    return true
-                end)
+        self.ret = {self.func()}
+        self.solved = true
+        if self.thenfn then
+            self.thenfn(unpack(self.ret))
+        end
+        return true
+    end)
     table.insert(tasks, self.thread)
     hook.add("think", table.address(Task), RUNTASK)
 end
-
 
 function Task.run(func, hk)
     return Task:new(func, hk)
 end
 function Task.all(tasks)
-    for _,task in pairs(tasks) do
+    for _, task in pairs(tasks) do
         while not task.solved do
             coroutine.yield()
         end
     end
     local ret = {}
-    for _,task in pairs(tasks) do
+    for _, task in pairs(tasks) do
         table.insert(ret, task.ret)
     end
     return unpack(ret)
 end
 TaskAll = Task.all
 function Task.sleep(ms)
-    coroutine.wait(ms/1000)
+    coroutine.wait(ms / 1000)
 end
 
 sleep = Task.sleep
@@ -86,8 +83,6 @@ function Task.While(bool)
     return temp
 end
 
-
-
 function Task:await()
     while not self.solved do
         coroutine.yield()
@@ -102,17 +97,18 @@ end
 
 Task.wait = Task.await
 
-await = setmetatable({},{
-    __mul = function(_,task)
+await = setmetatable({}, {
+    __mul = function(_, task)
         -- assert(istable(task) and task:isInstanceOf(Task), "await for Task only")
         return task:await()
     end,
     __tostring = function()
         return "await function"
-    end})
+    end
+})
 
-async = setmetatable({},{
-    __mul = function(_,fn)
+async = setmetatable({}, {
+    __mul = function(_, fn)
         assert(isfunction(fn), "is not function")
 
         return function(...)
@@ -125,32 +121,13 @@ async = setmetatable({},{
     end,
     __tostring = function()
         return "async function"
-    end})
+    end
+})
 if not TASKINITIALIZED then
-    
-    local http_ = table.copy(http)
-    
-    http.get = async* function(url, headers)
-    
-        local ret
 
-        http_.get(url, function(...) ret = {...} end, function(...) ret = {...} end, headers)
-        while not ret do
-            Task.yield()
-        end
-        return unpack(ret)
-    end
-    
-    http.post = async* function(url, payload, headers)
-    
-        local ret
-        http_.post(url, payload, function(...) ret = {...} end, function(...) ret = {...} end, headers)
-        while not ret do
-            Task.yield()
-        end
-        return unpack(ret)
-    end
-    fetch = async* function(url,options)
+    local http_ = table.copy(http)
+
+    fetch = async * function(url, options)
         options = options or {}
         local ret
         local cc = function(...)
@@ -163,6 +140,7 @@ if not TASKINITIALIZED then
             }
         end
         if options.payload then
+            
             http_.post(url, options.payload, cc, cc, options.headers)
         else
             http_.get(url, cc, cc, options.headers)
@@ -174,23 +152,24 @@ if not TASKINITIALIZED then
     end
     http.isAsync = true
     if CLIENT then
-        
+
         bass.isAsync = true
         local bass_ = table.copy(bass)
-    
-        bass.loadURL = async* function(path, flags)
-        
+
+        bassURL = async * function(path, flags)
+
             local ret
-            
-            bass_.loadURL(path, flags or "", function(...) ret = {...} end)
-                
+
+            bass_.loadURL(path, flags or "", function(...)
+                ret = {...}
+            end)
+
             while not ret do
                 Task.yield()
             end
             return unpack(ret)
         end
-        bassURL = bass.loadURL
-        soundLoad = async* function(url, flags)
+        soundLoad = async * function(url, flags)
             local ret
             local cc = function(...)
                 local args = {...}
@@ -200,9 +179,9 @@ if not TASKINITIALIZED then
                     name = args[3]
                 }
             end
-            
+
             bass_.loadURL(url, flags or "", cc)
-            
+
             while not ret do
                 Task.yield()
             end
@@ -210,48 +189,36 @@ if not TASKINITIALIZED then
         end
     else
         local prop_ = table.copy(prop)
-        
-        prop.createAsync = async* function(...)
-            
+
+        prop.createAsync = async * function(...)
+
             while not prop_.canSpawn() do
                 Task.sleep(200)
             end
-            
+
             return prop_.create(...)
-            
+
         end
-        prop.createSeatAsync = async* function(...)
-            
+        prop.createSeatAsync = async * function(...)
+
             while not prop_.canSpawn() do
                 Task.sleep(200)
             end
-            
+
             return prop_.createSeat(...)
-            
+
         end
-        prop.createCustomAsync = async* function(...)
-            
+        prop.createCustomAsync = async * function(...)
+
             while not prop_.canSpawn() do
                 Task.sleep(200)
             end
             return prop_.createCustom(...)
-            
+
         end
     end
 end
 _G.TASKINITIALIZED = true
 
 return Task
-
-
-
-
-
-
-
-
-
-
-
-
 

@@ -1,15 +1,17 @@
 --@client
 --@include libs/task.txt
 local Task = require("libs/task.txt")
---@superuser
+-- @superuser
 array = {}
 
+--[[
 if player():getPos():getDistance(chip():getPos()) > 50 then
     return 
 end
+]]
 
-local count = 16384
-local speed = 4096
+local count = 1024
+local speed = 1
 
 
 local div = 1
@@ -24,7 +26,7 @@ local function swap(a, b)
     Paint(a, array[a])
     Paint(b, array[b])
     snd:setPitch((array[a] or 1) / count * 255)
-    Task.yield(2)
+    Task.sleep(2)
 end
 local function set(a,b)
 
@@ -39,11 +41,12 @@ function quicksort(arr, low, high)
     high = high or #arr
     if low < high then
         local pivotIndex = partition(arr, low, high)
-        
+
         return Task.all{
             Task.run(function() quicksort(arr, low, pivotIndex - 1) end),
             Task.run(function() quicksort(arr, pivotIndex + 1, high) end)
         }
+        
         //quicksort(arr, low, pivotIndex - 1)
         //quicksort(arr, pivotIndex + 1, high)
         
@@ -195,7 +198,7 @@ function bitonicSortLined(arr)
 end
 
 local solve = async* function()
-    bubbleSort(array)
+    quicksort(array)
 end
 
 
@@ -219,20 +222,7 @@ end
 // 
 local done = nil
 local tbl = {}
-local mat = render.createMaterial("https://img3.goodfon.ru/original/1024x1024/2/96/lemur-sidit-otdyh.jpg", function(_,_,_,_,a) a(0,0,128,128) end, function(mat) 
-    
-    hook.add("renderoffscreen","getpixels", function()
-        render.selectRenderTarget("rt")
-        render.setMaterial(mat)
-        render.drawTexturedRect(0, 0, 1024, 1024)
-        render.capturePixels()
-        render.selectRenderTarget()
-        
-        for y = 0, 127 do
-            for x = 0, 127 do
-                table.insert(tbl, render.readPixel(x, y))
-            end
-        end
+
         
 
         Task.run(function()
@@ -247,15 +237,12 @@ local mat = render.createMaterial("https://img3.goodfon.ru/original/1024x1024/2/
         
         end)
 
-        hook.remove("renderoffscreen","getpixels")
-    end) 
-end)
 
 
 render.createRenderTarget("rt")
 local m = Matrix()
 local w = math.sqrt(count)
-m:setScale(Vector(1/w))
+//m:setScale(Vector(1/w))
 local q = {}
 function Paint(id,clr)
     table.insert(q, {id, clr})
@@ -295,13 +282,15 @@ hook.add("renderoffscreen","paint", function()
         //local clr = array[ind + 1] or 0
         for _ = 1,1050 do
             if #q <= 0 then
-                return
+                break
             end
             local ind, a = unpack(table.remove(q, 1))
-            local clr = tbl[a]
-            local x, y = (ind-1) % w, math.floor((ind-1) / w)
-            render.setColor(clr)
-            render.drawRectFast( x * 1024, y * 1024, 1024, 1024)
+
+            //local x, y = (ind-1) % w, math.floor((ind-1) / w)
+            render.setRGBA(0,0,0,255)
+            render.drawRectFast( ind-1, 0, 1, 1024)
+            render.setRGBA(255,255,255,255)
+            render.drawRectFast( ind-1, 1024 - a, 1, a)
         end
     //end
     render.popMatrix()
