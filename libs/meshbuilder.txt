@@ -3,11 +3,11 @@
 --@shared
 
 
---@include libs/task.txt
-local Task = require("libs/task.txt")
+--@include task.txt
+local Task = require("task.txt")
 
---@include libs/perms.txt
-local PERMA = require("libs/perms.txt")()
+--@include perms.txt
+local PERMA = require("perms.txt")()
 
 local _cachedMaterials = {}
 
@@ -75,10 +75,10 @@ if SERVER then
         for _, p in next, self.props do
             local names, pos, ang, scale, parent, rto, task = unpack(p)
             
-            self.rawObj = await* http.get(self.link)
+            self.rawObj = (await* fetch(self.link)).body
     
             local old = Task.While(true)
-            self.meshes = mesh.parseObj(self.rawObj, true)
+            self.meshes = mesh.parseObj(self.rawObj.body, true)
             Task.While(old)
             local t = {}
             local sito = {}
@@ -96,7 +96,7 @@ if SERVER then
                 end
             end
 
-            local p = await* prop.createCustom(rto and rto:localToWorld(pos) or pos, rto and rto:localToWorldAngles(ang) or ang, t, true)
+            local p = await* prop.createCustomAsync(rto and rto:localToWorld(pos) or pos, rto and rto:localToWorldAngles(ang) or ang, t, true)
             p:setParent(parent)
             
             task(p)
@@ -200,7 +200,7 @@ else
         net.send()
         
         local Getting = fancyStatus("Getting file")
-        self.rawObj = await* http.get(self.link)
+        self.rawObj = (await* fetch(self.link)).body
         Getting:kill()
 
         
@@ -225,7 +225,7 @@ else
         local meshData = self.meshData
         if self.debug then
             local debugcode = [[
---@include libs/MeshBuilder.txt
+-- @include libs/MeshBuilder.txt
 
 local MeshBuilder = require("libs/MeshBuilder.txt")
 
