@@ -1,0 +1,223 @@
+--@name render
+--@author discord.gg/6Q5NnHQTrh // kekobka // STEAM_0:0:186583728
+--@client
+
+--@superuser
+-- @owneronly
+if player():getPos():getDistance(chip():getPos()) > 1000 then return end
+--@model models/dav0r/camera.mdl
+local res = 256
+local SPP = 32
+local zoom = 0.5
+local refl = 4 // 0-100
+
+
+local tblfilter = {}
+---@include libs/task.txt
+Task = require("libs/task.txt")
+---@include libs/png.txt
+encode = require("libs/png.txt")
+local png = encode(res,res)
+local yield = Task.yield
+
+
+local function reflect(vector, normal)
+    return (vector - 2 * (normal:dot(vector) * normal))
+end
+local r = math.rand
+local function randvec()
+    return Vector(r(-1,1),r(-1,1),r(-1,1))
+end
+
+local function randreflect(normal)
+    local dir = randvec():getNormalized()
+    return dir * dir:dot(normal)
+end
+
+local function filter(self) 
+    
+    if self == chip() then return false end
+    if self:isPlayer() then return false end
+
+    return tblfilter[self:entIndex()]
+end
+local dOt = Vector().dot
+local function dot(v0,v1)
+    return dOt(v0,v1)
+end
+local X,Y = 0,0
+enableHud(player(), true)
+
+hook.add("postdrawhud","",function()
+    render.setRGBA(0,0,0,255)
+    render.drawRectFast(0,0,100,100)
+    render.setRGBA(255,255,255,255)
+    render.drawText(0,0,X..":"..Y)
+    render.drawText(0,16,((X+Y * res)/res^2)*100)
+    render.drawText(0,32,SPP)
+    
+end)
+
+local qu = {}
+render.createRenderTarget("rt")
+hook.add("render","",function()
+    render.setFilterMag(1)
+    render.setFilterMin(1)
+    render.setRGBA(255, 255, 255, 255)
+    render.setRenderTargetTexture("rt")
+    render.drawTexturedRect(0, 0, 512, 512)
+end)
+local sscare = 1024 / res
+hook.add("renderoffscreen","",function()
+    while #qu > 0 do
+        local t = table.remove(qu, 1)
+        render.selectRenderTarget("rt")
+        local v = t.c
+        v:setA(255)
+        render.setColor(v)
+        render.drawRectFast(t.x * sscare,t.y * sscare,sscare,sscare)
+        render.selectRenderTarget(nil)
+    end
+end)
+local skybox = Vector(-13000,-1120,11062)
+local line = trace.line
+
+local floor,remap, clamp, min,max, exp, traceSurfaceColor, lerp = math.floor, math.remap, math.clamp, math.min, math.max, math.exp, render.traceSurfaceColor, math.lerp
+function floorcolor(color)
+    color[1] = floor(color[1])
+    color[2] = floor(color[2])
+    color[3] = floor(color[3])
+    return color
+end
+function mincolor(color)
+    color[1] = min(color[1],255)
+    color[2] = min(color[2],255)
+    color[3] = min(color[3],255)
+    return color
+end
+Task(function()
+    local holo = hologram.create(chip():getPos(),Angle(),"models/holograms/cube.mdl",Vector(0.2))
+    Task.While(true)
+    local startpos = chip():getPos()
+    local ang = chip():getAngles()
+    local startTime = timer.curtime()
+    local sunclr = Color(65, 155, 255)
+    local sundir = Vector(0.4, 0.1, 0.7):getNormalized()
+    local white = Color(255, 255, 255)
+    local const_dist = 65536
+    
+    local Gray = Color(200,200,200)
+    local get_color = entity(0).getColor
+    local function getHitColor(t)
+        local r = t.Entity
+        return isValid(r) and get_color(r) or traceSurfaceColor(t.HitPos - t.Normal * 30, t.HitPos + t.Normal * const_dist)
+    end
+    local function randomDir(norm, raydir)
+        if math.random(0, 100) < refl then
+            return reflect(raydir, norm)
+        else
+            local dir = randvec():getNormalized()
+            return dir * dir:dot(norm)
+        end
+    end
+    local function randomdir(norm)
+        local dir = randvec():getNormalized()
+        return dir * dir:dot(norm)
+    end
+    local depth = 4
+    local absorb = 0.8
+    local black = Color(0, 0, 0 , 255)
+    local pdf = 2 / (2 * math.pi)
+    local function Trace(x, y)
+        local dir = (Vector(res*zoom, res / 2 - x, res / 2 - y)):getRotated(ang):getNormalized()
+        local middleColor = black
+        local firstTrace = line(startpos, startpos + dir * const_dist, filter)
+        local firstPos = firstTrace.HitPos
+        local firstNormal = firstTrace.HitNormal
+        local firstColor = getHitColor(firstTrace)
+        if firstTrace.HitSky then
+            yield()
+            return sunclr
+        end
+        if SPP > 0 then
+            for _ = 1, SPP do            
+    
+                local color = firstColor:clone()
+    
+                for d = 1, depth do
+    
+                    if r(0,1) < 0.1 then
+                        dir = firstPos + sundir:getRotated(Angle(r(-2.5, 2.5), r(-2.5, 0.5), r(-2.5, 2.5))) * const_dist
+                    else
+                        dir = firstPos + randomDir(firstNormal, dir) * const_dist
+                    end
+                    t = line(firstPos, dir, filter)
+                    
+                    local hitsky = t.HitSky
+                    if not hitsky and d == depth then
+                        color = black
+                        break
+                    elseif hitsky then
+                        local exp = dir:getNormalized():dot(sundir)^0.3
+                        lightcolor = Color(255, 255, 255) * math.lerp(exp,exp,0.8)
+                        
+                        color = color * (lightcolor / 255)
+                        color = mincolor(color)
+                        break
+                    end
+                    
+                    color = color * 0.8
+                    color = color * (getHitColor(t) / 255)
+                    
+                end
+                
+                //table.insert(qu,{x=x,y=y, c = color})
+                middleColor = middleColor + floorcolor(color)
+                yield()
+            end
+            
+            middleColor = middleColor / SPP
+            return floorcolor(middleColor)
+        end
+        yield()
+        return floorcolor(firstColor)
+    end
+    local sres = res/4
+    for y = 0, sres - 1 do
+        for x = 0, sres - 1 do
+
+            local dir = (Vector(sres*zoom, sres / 2 - x, sres / 2 - y)):getRotated(ang):getNormalized()
+            local firstTrace = line(startpos, startpos + dir * const_dist, chip())
+            local r = firstTrace.Entity
+            if isValid(r) then 
+                tblfilter[r:entIndex()] = true
+            end
+            yield()
+        end
+    end
+    local sqrtt = res/4
+    while true do
+        for yoff = 0, res - sqrtt, sqrtt do
+            for xoff = 0, res - sqrtt, sqrtt do
+                for y = yoff, yoff + sqrtt - 1 do
+                    for x = xoff, xoff + sqrtt - 1 do
+        
+                        local clr = Trace(x, y)
+        
+                        table.insert(qu,{x=x,y=y, c = clr})
+                        //png:write(mincolor(clr))
+                        X,Y = x,y
+                    end
+                end
+            end
+        end
+        SPP = SPP * 2
+    end
+    
+    //file.write("test.png",table.concat(png.output,""))
+    //printHud(player(),png.done)
+    //printHud(player(),"Time: " .. string.toHoursMinutesSecondsMilliseconds(timer.curtime() - startTime))
+end)
+
+
+

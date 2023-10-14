@@ -31,8 +31,9 @@ end
 local function set(a,b)
 
     array[a] = b
+    Paint(a, b)
     snd:setPitch(b / count * 255)
-    Task.yield()
+    Task.sleep(2)
 end
 
 function quicksort(arr, low, high)
@@ -198,7 +199,7 @@ function bitonicSortLined(arr)
 end
 
 local solve = async* function()
-    quicksort(array)
+    sortBitonic(array)
 end
 
 

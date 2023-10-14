@@ -188,14 +188,16 @@ end
 local chart = Chart({32,32}, 0.01, 55)
 //chart:setLine(true)
 local abs,sin,cos,log,sqrt,sgn,pi,tg = math.abs,math.sin,math.cos,math.log,math.sqrt,math.sign,math.pi,math.tan
-chart:func(function(x)
-    local r = x^2
+chart:funcP(function(x)
+    local r = math.log(x)
+--[[
     if x > 0 then
         chart.drawRectFast(x, r, 1, r)
     else
         chart.drawRectFast(x-1, r, 1, r)
     end
-
+]]
+    //chart.drawRectFast(0, r, x, 0.1)
     return r
 end)
 chart:startRender()
