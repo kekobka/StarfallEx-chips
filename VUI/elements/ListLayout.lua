@@ -21,7 +21,7 @@ function ListLayout:paint(x, y, w, h)
     render.drawRoundedBox(round, x + 1, y + 1, w - 2, h - 2)
 end
 function ListLayout:getRounded()
-    return UI._Skin.ListLayout.rounded
+    return self.UI._Skin.ListLayout.rounded
 end
 function ListLayout:getFullH()
     local w = 0

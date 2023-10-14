@@ -31,7 +31,7 @@ function Button:paint(x, y, w, h)
     render.drawSimpleText(x + (self.alignX == 1 and w / 2 or 0), y + (self.alignY == 1 and h / 2 or 0), self._text, self.alignX, self.alignY)
 end
 function Button:getRounded()
-    return UI._Skin.Button.rounded
+    return self.UI._Skin.Button.rounded
 end
 function Button:setColor(v)
     self._color = v

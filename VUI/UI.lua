@@ -1,12 +1,13 @@
 ---@include ./utils.lua
 require("./utils.lua")
 
+local UI = class("UI")
 ---@include ./Element.lua
 Element = require("./Element.lua")
 ---@include ./Skin.lua
 
 local huge = math.huge
-UI = class("UI")
+Element.static.UI = UI
 UI.Skin = require("./Skin.lua")
 UI._Skin = UI.Skin({
     Main = {

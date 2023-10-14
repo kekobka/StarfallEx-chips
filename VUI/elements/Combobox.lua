@@ -15,6 +15,7 @@ function Combobox:initialize(UI, b)
     if not b then
         self:init()
     end
+    self.fonts = self.UI.FONTS
 end
 function Combobox:paint(x, y, w, h)
     local round = self:getRounded()
@@ -26,7 +27,7 @@ function Combobox:paint(x, y, w, h)
     render.setFont(self._font)
     render.drawSimpleText(x + 1 + (self.alignX == 1 and w / 2 or 0), y + (self.alignY == 1 and h / 2 or 0), self._text, self.alignX, self.alignY)
     render.setColor(self:getColorScheme("text"))
-    render.setFont(UI.FONTS.icons)
+    render.setFont(self.fonts.icons)
     render.drawSimpleText(x + w - 5, y + h / 2, string.utf8char(0xE700), 2, 1)
 end
 function Combobox:onMousePressed(x, y, key, keyName)
@@ -81,7 +82,7 @@ function Combobox:addLine(c)
 end
 
 function Combobox:getRounded()
-    return UI._Skin.Combobox.rounded
+    return self.UI._Skin.Combobox.rounded
 end
 
 function Combobox:performLayout(w, h)

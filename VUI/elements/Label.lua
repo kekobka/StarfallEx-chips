@@ -54,7 +54,7 @@ function Label:getFont()
     return self._font
 end
 function Label:getColorScheme(type)
-    return UI._Skin.Label[type]
+    return self.UI._Skin.Label[type]
 end
 
 function Label:setText(text)

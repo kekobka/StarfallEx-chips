@@ -40,7 +40,7 @@ function ScrollPanel:initialize(UI, b)
     end
 end
 function ScrollPanel:getRounded()
-    return UI._Skin.ScrollPanel.rounded
+    return self.UI._Skin.ScrollPanel.rounded
 end
 function ScrollPanel:onMousePressed(x, y, key, keyName, child)
 

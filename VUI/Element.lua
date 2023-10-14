@@ -53,8 +53,8 @@ function Element:add(name)
     if not name then
         return throw("is not element")
     end
-    assert(istable(UI._elements[name:lower()]), name .. " is not element")
-    local el = UI._elements[name:lower()](self.UI)
+    assert(istable(Element.UI._elements[name:lower()]), name .. " is not element")
+    local el = Element.UI._elements[name:lower()](self.UI)
     el.UI = self.UI
     self:addChild(el)
 
@@ -379,7 +379,7 @@ function Element:_onMousePressed(x, y, key, keyName)
     end
 end
 function Element:getColorScheme(type)
-    return UI._Skin.Main[type]
+    return self.UI._Skin.Main[type]
 end
 function Element:_onMouseReleased(x, y, key, keyName)
     if self:cursorIntersect(x, y) and self:isVisible() and self:isEnabled() then

@@ -21,7 +21,7 @@ function Checkbox:paint(x, y, w, h)
     end
 end
 function Checkbox:getRounded()
-    return UI._Skin.Checkbox.rounded
+    return self.UI._Skin.Checkbox.rounded
 end
 function Checkbox:setChecked(state)
     self._checked = state

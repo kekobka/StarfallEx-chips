@@ -9,7 +9,7 @@ function Frame:initialize(UI, b)
     self.title:disable()
 
     self.closeButton = self:add("button")
-    self.closeButton:setFont(UI.FONTS.icons)
+    self.closeButton:setFont(self.UI.FONTS.icons)
     self.closeButton:setText(string.utf8char(0xE8BB))
     self.closeButton:setSize(24, 24)
     self.closeButton:setAlign(1)
@@ -19,7 +19,7 @@ function Frame:initialize(UI, b)
     end
 
     self.minmaxButton = self:add("button")
-    self.minmaxButton:setFont(UI.FONTS.icons)
+    self.minmaxButton:setFont(self.UI.FONTS.icons)
     self.minmaxButton:setText(string.utf8char(0xE921))
     self.minmaxButton:setSize(24, 24)
     self.minmaxButton:setAlign(1)
@@ -52,10 +52,10 @@ function Frame:paint(x, y, w, h)
 end
 
 function Frame:getColorScheme(type)
-    return UI._Skin.Frame[type]
+    return self.UI._Skin.Frame[type]
 end
 function Frame:getRounded()
-    return UI._Skin.Frame.rounded
+    return self.UI._Skin.Frame.rounded
 end
 function Frame:isDraggable()
     return self._draggable
