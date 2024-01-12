@@ -1,6 +1,7 @@
--- @name libs/task
--- втф чо асинхронность в гмоде 
--- ОСТОРОЖНО ОНО ЛОМАЕТ http И bass И prop таблицы превращая их в асинхронные
+---@name libs/task
+if setAuthor then
+    setAuthor((chip():getChipAuthor() or "") .. "\n[ Task lib by Kekobka ]")
+end
 if not Task then
     Task = class("Task")
 end
@@ -8,15 +9,16 @@ local function canProcess()
     return math.max(cpuTotalAverage(), cpuTotalUsed() / 4) < cpuMax() * 0.7
 end
 local tasks = {}
+Task.static.pool = tasks
 local While = false
 local function WORK()
     for Key, work in ipairs(tasks) do
-        if work(Key) then
+        if work.thread(Key) then
             table.remove(tasks, Key)
         end
     end
 end
-local function RUNTASK()
+local function RUNTASK(hookname)
     if While then
         local curtime = timer.systime()
         while timer.systime() - curtime < 1 / 60 and canProcess() do
@@ -27,33 +29,54 @@ local function RUNTASK()
     end
 
     if #tasks < 1 then
-        hook.remove("think", table.address(Task))
+        hook.remove(hookname, table.address(Task))
     end
 end
 
 function Task:initialize(func, hk)
     self.func = func
+    self.hook = hk
     self.ret = {}
     self.solved = false
     self.thread = coroutine.wrap(function(Key)
-        self.ret = {self.func()}
+        self.ret = {self.func(self)}
         self.solved = true
         if self.thenfn then
             self.thenfn(unpack(self.ret))
         end
         return true
     end)
-    table.insert(tasks, self.thread)
-    hook.add("think", table.address(Task), RUNTASK)
+end
+
+function Task:start()
+    table.insert(tasks, self)
+    hook.add(self.hook, table.address(Task), function()
+        RUNTASK(self.hook)
+    end)
+    return self
 end
 
 function Task.run(func, hk)
-    return Task:new(func, hk)
+    return Task(func, hk or "think"):start()
 end
+function Task.renderoffscreen(func)
+    return Task(func, "renderoffscreen"):start()
+end
+function Task.renderscene(func)
+    return Task(func, "renderscene"):start()
+end
+
+local dummyfunc = function()
+    return true
+end
+function Task:cancel()
+    self.thread = dummyfunc
+end
+
 function Task.all(tasks)
     for _, task in pairs(tasks) do
         while not task.solved do
-            coroutine.yield()
+            Task.yield()
         end
     end
     local ret = {}
@@ -63,14 +86,15 @@ function Task.all(tasks)
     return unpack(ret)
 end
 TaskAll = Task.all
+local coroutine_wait, coroutine_yield = coroutine.wait, coroutine.yield
 function Task.sleep(ms)
-    coroutine.wait(ms / 1000)
+    coroutine_wait(ms / 1000)
 end
 
 sleep = Task.sleep
 
 function Task.yield()
-    coroutine.yield()
+    coroutine_yield()
 end
 
 function Task:th(fn)
@@ -85,12 +109,12 @@ end
 
 function Task:await()
     while not self.solved do
-        coroutine.yield()
+        coroutine_yield()
     end
     return unpack(self.ret)
 end
 function Task:kill()
-    table.removeByValue(tasks, self.thread)
+    table.removeByValue(tasks, self)
     table.empty(self)
     self = nil
 end
@@ -140,7 +164,7 @@ if not TASKINITIALIZED then
             }
         end
         if options.payload then
-            
+
             http_.post(url, options.payload, cc, cc, options.headers)
         else
             http_.get(url, cc, cc, options.headers)
@@ -216,6 +240,14 @@ if not TASKINITIALIZED then
             return prop_.createCustom(...)
 
         end
+    end
+    hologram.createAsync = async * function(...)
+
+        while not hologram.canSpawn() do
+            Task.sleep(200)
+        end
+        return hologram.create(...)
+
     end
 end
 _G.TASKINITIALIZED = true
